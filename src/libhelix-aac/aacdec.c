@@ -44,6 +44,7 @@
  **************************************************************************************/
 
 #include "aaccommon.h"
+#include "sbr.h"
 
 //#include "profile.h"
 
@@ -178,17 +179,23 @@ void AACGetLastFrameInfo(HAACDecoder hAACDecoder, AACFrameInfo *aacFrameInfo) {
         aacFrameInfo->tnsUsed =       0;
         aacFrameInfo->pnsUsed =       0;
     } else {
+        int nChans = aacDecInfo->nChans;
+#if defined(AAC_ENABLE_SBR) && defined(AAC_ENABLE_PS)
+        if (aacDecInfo->psInfoSBR && ((PSInfoSBR *)aacDecInfo->psInfoSBR)->psUsed) {
+            nChans = 2;
+        }
+#endif
         aacFrameInfo->bitRate =       aacDecInfo->bitRate;
-        aacFrameInfo->nChans =        aacDecInfo->nChans;
+        aacFrameInfo->nChans =        nChans;
         aacFrameInfo->sampRateCore =  aacDecInfo->sampRate;
 #if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
         aacFrameInfo->sampRateOut =   aacDecInfo->sampRate;
         aacFrameInfo->bitsPerSample = 16;
-        aacFrameInfo->outputSamps =   aacDecInfo->nChans * AAC_MAX_NSAMPS;
+        aacFrameInfo->outputSamps =   nChans * AAC_MAX_NSAMPS;
 #else
         aacFrameInfo->sampRateOut =   aacDecInfo->sampRate * (aacDecInfo->sbrEnabled ? 2 : 1);
         aacFrameInfo->bitsPerSample = 16;
-        aacFrameInfo->outputSamps =   aacDecInfo->nChans * AAC_MAX_NSAMPS * (aacDecInfo->sbrEnabled ? 2 : 1);
+        aacFrameInfo->outputSamps =   nChans * AAC_MAX_NSAMPS * (aacDecInfo->sbrEnabled ? 2 : 1);
 #endif
         aacFrameInfo->profile =       aacDecInfo->profile;
         aacFrameInfo->tnsUsed =       aacDecInfo->tnsUsed;

@@ -44,9 +44,13 @@ bool AudioOutputSTDIO::begin() {
     if (f) {
         return false;    // Already open!
     }
+    if (!filename) {
+        filename = strdup("out.wav");
+    }
     unlink(filename);
     f = fopen(filename, "wb+");
     if (!f) {
+        printf("Failed to open %s\n", filename);
         return false;
     }
 
@@ -72,6 +76,9 @@ bool AudioOutputSTDIO::ConsumeSample(int16_t sample[2]) {
 
 
 bool AudioOutputSTDIO::stop() {
+    if (!f) {
+        return false;
+    }
     uint8_t wavHeader[sizeof(wavHeaderTemplate)];
 
     memcpy_P(wavHeader, wavHeaderTemplate, sizeof(wavHeaderTemplate));

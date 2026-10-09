@@ -102,7 +102,8 @@ typedef struct _PSData {
 
 /* External static tables in PROGMEM */
 extern const int iid_scale_tab[15] PROGMEM;
-extern const int icc_scale_tab[8] PROGMEM;
+extern const int icc_cos_tab[8];
+extern const int icc_sin_tab[8];
 extern const int alpha_tab[8] PROGMEM;
 
 /* Function prototypes */

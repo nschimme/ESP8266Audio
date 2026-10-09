@@ -56,8 +56,8 @@ int main(int argc, char **argv)
     out->SetFilename("jamonit.wav");
     AudioOutputMixer *mix = new AudioOutputMixer(17, out);
     AudioOutputMixerStub *stub = mix->NewInput();
-    void *space = malloc(32000);
-    AudioGeneratorMP3 *mp3 = new AudioGeneratorMP3(space, 32000);
+    void *space = malloc(29192);
+    AudioGeneratorMP3 *mp3 = new AudioGeneratorMP3(space, 29192);
 
     mp3->begin(id3, stub);
     while (mp3->loop()) { /*noop*/ }

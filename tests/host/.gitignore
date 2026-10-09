@@ -1,0 +1,10 @@
+*.o
+aac
+flac
+id3
+midi
+mod
+mp3
+opus
+wav
+out*.wav

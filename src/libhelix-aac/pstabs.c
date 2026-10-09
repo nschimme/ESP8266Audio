@@ -39,35 +39,47 @@
 
 /* Dequantization scale factor tables in PROGMEM (Q30 format, capped to 32-bit max) */
 
-/* IID (Inter-channel Intensity Difference) scale factors: 10^(index * 1.5 / 20) in Q30 */
+/* IID (Inter-channel Intensity Difference) scale factors c1 in Q30 */
 const int iid_scale_tab[15] PROGMEM = {
-    0x02a2491c, /* -7: 0.041355 */
-    0x053531b7, /* -6: 0.082180 */
-    0x0a14fb61, /* -5: 0.157490 */
-    0x1338a0a7, /* -4: 0.299832 */
-    0x23f2fef7, /* -3: 0.561341 */
-    0x3f1e9444, /* -2: 0.986233 */
-    0x63333333, /* -1: 1.550000 */
-    0x40000000, /*  0: 1.000000 */
-    0x67305980, /*  1: 1.610000 */
-    0x7fffffff, /*  2: 2.458330 (clamped Q30) */
-    0x7fffffff, /*  3: 3.735430 (clamped Q30) */
-    0x7fffffff, /*  4: 6.059240 (clamped Q30) */
-    0x7fffffff, /*  5: 8.903440 (clamped Q30) */
-    0x7fffffff, /*  6: 13.20880 (clamped Q30) */
-    0x7fffffff  /*  7: 19.27130 (clamped Q30) */
+    0x055db01a, /* -7 */
+    0x0a04ad8a, /* -6 */
+    0x0f977a65, /* -5 */
+    0x17ac04a3, /* -4 */
+    0x1f5eb7ff, /* -3 */
+    0x26658333, /* -2 */
+    0x2a95110e, /* -1 */
+    0x2d413ccd, /*  0 */
+    0x2fc732ab, /*  1 */
+    0x3333dd97, /*  2 */
+    0x37c8dc9d, /*  3 */
+    0x3b7613c8, /*  4 */
+    0x3e125c4d, /*  5 */
+    0x3f360602, /*  6 */
+    0x3fc64fab  /*  7 */
 };
 
-/* ICC (Inter-channel Cross-Correlation) parameters in Q30 */
-const int icc_scale_tab[8] PROGMEM = {
-    0x40000000, /* 1.000000 */
-    0x3d304918, /* 0.955700 */
-    0x3a4fbc4e, /* 0.910800 */
-    0x323c28cb, /* 0.785100 */
-    0x2475a898, /* 0.570000 */
-    0x162c9d78, /* 0.346600 */
-    0x0a1c1724, /* 0.158000 */
-    0x00000000  /* 0.000000 */
+/* ICC cos(alpha) in Q30 */
+const int icc_cos_tab[8] PROGMEM = {
+    0x40000000,
+    0x3efbe321,
+    0x3d674023,
+    0x393e4b8b,
+    0x34e9515b,
+    0x2d413ccd,
+    0x1d033669,
+    0x00000000
+};
+
+/* ICC sin(alpha) in Q30 */
+const int icc_sin_tab[8] PROGMEM = {
+    0x00000000,
+    0x0b5bdf1d,
+    0x120b973c,
+    0x1c9f25c6,
+    0x24015d80,
+    0x2d413ccd,
+    0x390bd586,
+    0x40000000
 };
 
 /* Allpass filter fractional delay / feedback coefficients in Q30 */

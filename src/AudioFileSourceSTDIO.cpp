@@ -69,8 +69,10 @@ bool AudioFileSourceSTDIO::seek(int32_t pos, int dir) {
 }
 
 bool AudioFileSourceSTDIO::close() {
-    fclose(f);
-    f = NULL;
+    if (f) {
+        fclose(f);
+        f = NULL;
+    }
     return true;
 }
 

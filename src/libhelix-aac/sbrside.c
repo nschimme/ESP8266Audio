@@ -555,8 +555,26 @@ void UnpackSBRSingleChannel(BitStreamInfo *bsi, PSInfoSBR *psi, int chBase) {
 
         /* get ID, unpack extension info, do whatever is necessary with it... */
         while (bitsLeft > 0) {
-            GetBits(bsi, 8);
-            bitsLeft -= 8;
+            int ext_id = GetBits(bsi, 2);
+            bitsLeft -= 2;
+#if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
+            if (ext_id == EXT_PS) {
+                psi->psUsed = 1;
+                DecodePSHeader(bsi, &psi->psData.hdr);
+                DecodePSDataPayload(bsi, &psi->psData);
+                bitsLeft = 0;
+            } else
+#endif
+            {
+                while (bitsLeft >= 8) {
+                    GetBits(bsi, 8);
+                    bitsLeft -= 8;
+                }
+                if (bitsLeft > 0) {
+                    GetBits(bsi, bitsLeft);
+                    bitsLeft = 0;
+                }
+            }
         }
     }
 }

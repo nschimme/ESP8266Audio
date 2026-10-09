@@ -247,19 +247,6 @@ int DecodeSBRBitstream(AACDecInfo *aacDecInfo, int chBase) {
         return ERR_AAC_SBR_BITSTREAM;
     }
 
-#if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
-    if (aacDecInfo->prevBlockID == AAC_ID_SCE) {
-        if (GetBits(&bsi, 1)) { /* ps_data_present */
-            int ext_type = GetBits(&bsi, 2);
-            if (ext_type == EXT_PS) {
-                psi->psUsed = 1;
-                DecodePSHeader(&bsi, &psi->psData.hdr);
-                DecodePSDataPayload(&bsi, &psi->psData);
-                aacDecInfo->nChans = 2; /* Promote mono SBR stream with PS to stereo output */
-            }
-        }
-    }
-#endif
 
     ByteAlignBitstream(&bsi);
 
@@ -397,9 +384,25 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
                 /* Apply Parametric Stereo slot-by-slot without huge RAM allocation */
 #if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
                 qmfsBands = 32;
+                short *outL = outbuf;
+                short *outR = outbuf + 1;
+                int slot_L[64][2];
+                int slot_R[64][2];
+
+                for (l = 0; l < 16; l++) {
+                    ProcessPSSlot(&psi->psData, psi->XBuf[l * 2 + HF_ADJ], slot_L, slot_R, l * 2);
+
+                    /* Synthesize Left channel QMF for slot l */
+                    QMFSynthesis(slot_L[0], psi->delayQMFS[0], &(psi->delayIdxQMFS[0]), qmfsBands, outL, 2);
+                    outL += 64 * 2;
+
+                    /* Synthesize Right channel QMF for slot l */
+                    QMFSynthesis(slot_R[0], psi->delayQMFS[1], &(psi->delayIdxQMFS[1]), qmfsBands, outR, 2);
+                    outR += 64 * 2;
+                }
+                break;
 #else
                 qmfsBands = sbrFreq->kStart + sbrFreq->numQMFBands;
-#endif
                 short *outL = outbuf;
                 short *outR = outbuf + 1;
                 int slot_L[64][2];
@@ -417,14 +420,15 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
                     outR += 64 * 2;
                 }
                 break;
+#endif
             }
 #endif
 
             /* step 4 - synthesis QMF */
 #if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
             qmfsBands = 32;
-            for (l = 0; l < 32; l++) {
-                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
+            for (l = 0; l < 16; l++) {
+                QMFSynthesis(psi->XBuf[l * 2 + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
                 outptr += 64 * aacDecInfo->nChans;
             }
 #else

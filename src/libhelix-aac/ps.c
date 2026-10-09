@@ -179,13 +179,14 @@ int DecodePSDataPayload(BitStreamInfo *bsi, PSData *psd) {
 
             int c1 = iid_scale_tab[iid_idx];
             int c2 = iid_scale_tab[14 - iid_idx];
-            int rho = icc_scale_tab[icc_idx];
+            int cos_a = icc_cos_tab[icc_idx];
+            int sin_a = icc_sin_tab[icc_idx];
 
-            /* Fixed-point Q30 PS gains */
-            psd->h11[env][b] = MUL_Q30(c1, rho);
-            psd->h12[env][b] = MUL_Q30(c1, Q30(1.0) - rho);
-            psd->h21[env][b] = MUL_Q30(c2, rho);
-            psd->h22[env][b] = -MUL_Q30(c2, Q30(1.0) - rho);
+            /* Fixed-point Q30 PS mixing matrix coefficients */
+            psd->h11[env][b] = MUL_Q30(c1, cos_a);
+            psd->h12[env][b] = MUL_Q30(c1, sin_a);
+            psd->h21[env][b] = MUL_Q30(c2, cos_a);
+            psd->h22[env][b] = -MUL_Q30(c2, sin_a);
         }
     }
 

@@ -7,16 +7,21 @@
 
 int main(int argc, char **argv)
 {
-    (void) argc;
-    (void) argv;
-    AudioFileSourceSTDIO *in = new AudioFileSourceSTDIO(AAC);
+    const char *infile = (argc > 1) ? argv[1] : AAC;
+    const char *outfile = (argc > 2) ? argv[2] : "out.aac.wav";
+    AudioFileSourceSTDIO *in = new AudioFileSourceSTDIO(infile);
     AudioOutputSTDIO *out = new AudioOutputSTDIO();
-    out->SetFilename("out.aac.wav");
-    void *space = malloc(120000);
-    AudioGeneratorAAC *aac = new AudioGeneratorAAC(space, 120000);
+    out->SetFilename(outfile);
+    void *space = malloc(200000);
+    AudioGeneratorAAC *aac = new AudioGeneratorAAC(space, 200000);
 
-    aac->begin(in, out);
-    while (aac->loop()) { /*noop*/ }
+    printf("Opening infile=%s, outfile=%s\n", infile, outfile);
+    if (!aac->begin(in, out)) {
+        printf("aac->begin failed!\n");
+    }
+    int count = 0;
+    while (aac->loop()) { count++; }
+    printf("aac->loop finished, count=%d\n", count);
     aac->stop();
 
     delete aac;
