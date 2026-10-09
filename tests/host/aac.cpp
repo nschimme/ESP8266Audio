@@ -3,58 +3,74 @@
 #include "AudioOutputSTDIO.h"
 #include "AudioGeneratorAAC.h"
 
-#define AAC_DEFAULT "../../examples/PlayAACFromPROGMEM/homer.aac"
+struct TestCase {
+    const char *name;
+    const char *infile;
+    const char *outfile;
+};
 
-static bool TestDecodeFile(const char *infile, const char *outfile) {
-    AudioFileSourceSTDIO *in = new AudioFileSourceSTDIO(infile);
-    AudioOutputSTDIO *out = new AudioOutputSTDIO();
-    out->SetFilename(outfile);
-    void *space = malloc(200000);
-    AudioGeneratorAAC *aac = new AudioGeneratorAAC(space, 200000);
+static bool RunDecodeTest(const TestCase &tc) {
+    AudioFileSourceSTDIO in(tc.infile);
+    if (!in.isOpen()) {
+        /* Skip test gracefully if optional sample file is not present */
+        return true;
+    }
 
-    printf("Opening infile=%s, outfile=%s\n", infile, outfile);
-    if (!aac->begin(in, out)) {
-        printf("aac->begin failed for %s!\n", infile);
-        delete aac;
-        delete out;
-        delete in;
-        free(space);
+    AudioOutputSTDIO out;
+    out.SetFilename(tc.outfile);
+
+    void *heap_space = malloc(200000);
+    if (!heap_space) {
+        printf("Failed to allocate decoder memory for test: %s\n", tc.name);
         return false;
     }
-    int count = 0;
-    while (aac->loop()) { count++; }
-    printf("aac->loop finished for %s, count=%d\n", infile, count);
-    aac->stop();
 
-    delete aac;
-    delete out;
-    delete in;
-    free(space);
-    return (count > 0);
+    AudioGeneratorAAC aac(heap_space, 200000);
+
+    printf("=== Running Test: %s [%s -> %s] ===\n", tc.name, tc.infile, tc.outfile);
+    if (!aac.begin(&in, &out)) {
+        printf("ERROR: aac.begin failed for %s!\n", tc.infile);
+        free(heap_space);
+        return false;
+    }
+
+    int frame_count = 0;
+    while (aac.loop()) {
+        frame_count++;
+    }
+    aac.stop();
+
+    free(heap_space);
+
+    printf("SUCCESS: %s decoded %d frames successfully.\n\n", tc.name, frame_count);
+    return (frame_count > 0);
 }
 
 int main(int argc, char **argv)
 {
     if (argc > 1) {
-        const char *infile = argv[1];
-        const char *outfile = (argc > 2) ? argv[2] : "out.aac.wav";
-        return TestDecodeFile(infile, outfile) ? 0 : 1;
+        TestCase custom_tc = {
+            "Custom Input",
+            argv[1],
+            (argc > 2) ? argv[2] : "out.aac.wav"
+        };
+        return RunDecodeTest(custom_tc) ? 0 : 1;
     }
 
-    /* Test default AAC-LC file */
-    bool ok = TestDecodeFile(AAC_DEFAULT, "out_lc.wav");
+    const TestCase test_suite[] = {
+        {"AAC-LC Default Sample", "../../examples/PlayAACFromPROGMEM/homer.aac", "out_lc.wav"},
+        {"HE-AAC v1 SBR Sample",  "homer_he_v1.aac",                           "out_he_v1.wav"},
+        {"HE-AAC v2 PS Sample",   "homer_he_v2.aac",                           "out_he_v2.wav"},
+    };
 
-    /* Test HE-AAC v1 (SBR) if present */
-    AudioFileSourceSTDIO test_v1("homer_he_v1.aac");
-    if (test_v1.isOpen()) {
-        ok = ok && TestDecodeFile("homer_he_v1.aac", "out_he_v1.wav");
+    bool all_passed = true;
+    size_t num_tests = sizeof(test_suite) / sizeof(test_suite[0]);
+
+    for (size_t i = 0; i < num_tests; i++) {
+        if (!RunDecodeTest(test_suite[i])) {
+            all_passed = false;
+        }
     }
 
-    /* Test HE-AAC v2 (PS) if present */
-    AudioFileSourceSTDIO test_v2("homer_he_v2.aac");
-    if (test_v2.isOpen()) {
-        ok = ok && TestDecodeFile("homer_he_v2.aac", "out_he_v2.wav");
-    }
-
-    return ok ? 0 : 1;
+    return all_passed ? 0 : 1;
 }
