@@ -175,6 +175,51 @@ int DecodePSDataPayload(BitStreamInfo *bsi, PSData *psd) {
 }
 
 /**************************************************************************************
+    Function:    HybridAnalysisFilterbank
+
+    Description: Perform 71/91-band sub-QMF FIR filterbank analysis on band k
+ **************************************************************************************/
+static void HybridAnalysisFilterbank(PSData *psd, int band, int input[2], int sub_out[12][2], int num_subbands) {
+    int j;
+    int *buf = psd->hybrid_buffer[band][0];
+
+    /* Shift history buffer by 1 sample */
+    memmove(psd->hybrid_buffer[band][1], psd->hybrid_buffer[band][0], 11 * sizeof(int) * 2);
+    psd->hybrid_buffer[band][0][0] = input[0];
+    psd->hybrid_buffer[band][0][1] = input[1];
+
+    if (num_subbands == 8) {
+        /* 8-channel sub-QMF FIR filter */
+        for (int q = 0; q < 8; q++) {
+            int acc_re = 0, acc_im = 0;
+            for (j = 0; j < 12; j++) {
+                int coeff = (j < 6) ? p8_13_20[j] : p8_13_20[12 - j];
+                acc_re += MUL_Q30(coeff, psd->hybrid_buffer[band][j][0]);
+                acc_im += MUL_Q30(coeff, psd->hybrid_buffer[band][j][1]);
+            }
+            sub_out[q][0] = acc_re;
+            sub_out[q][1] = acc_im;
+        }
+    } else if (num_subbands == 4) {
+        /* 4-channel sub-QMF FIR filter */
+        for (int q = 0; q < 4; q++) {
+            int acc_re = 0, acc_im = 0;
+            for (j = 0; j < 12; j++) {
+                int coeff = (j < 6) ? p4_13_20[j] : p4_13_20[12 - j];
+                acc_re += MUL_Q30(coeff, psd->hybrid_buffer[band][j][0]);
+                acc_im += MUL_Q30(coeff, psd->hybrid_buffer[band][j][1]);
+            }
+            sub_out[q][0] = acc_re;
+            sub_out[q][1] = acc_im;
+        }
+    } else {
+        /* Direct pass-through for 1-to-1 bands */
+        sub_out[0][0] = input[0];
+        sub_out[0][1] = input[1];
+    }
+}
+
+/**************************************************************************************
     Function:    ProcessPSSlot
 
     Description: Apply fixed-point PS mixing matrix & allpass decorrelator to slot l
@@ -192,69 +237,98 @@ void ProcessPSSlot(PSData *psd, int Xbuf_slot[64][2], int slot_L[64][2], int slo
         }
     }
 
-    int num_subbands = (hdr->iid_mode < 3) ? PS_NUM_SUBBANDS_20 : PS_NUM_SUBBANDS_34;
+    int num_param_subbands = (hdr->iid_mode < 3) ? PS_NUM_SUBBANDS_20 : PS_NUM_SUBBANDS_34;
 
-    /* Subbands 0..31: Allpass decorrelation and matrix mixing */
+    /* Sub-QMF analysis outputs for bands 0..2 */
+    int sub_analysis[3][12][2];
+    HybridAnalysisFilterbank(psd, 0, Xbuf_slot[0], sub_analysis[0], 8);
+    HybridAnalysisFilterbank(psd, 1, Xbuf_slot[1], sub_analysis[1], 4);
+    HybridAnalysisFilterbank(psd, 2, Xbuf_slot[2], sub_analysis[2], 4);
+
+    /* Clear output slots */
+    memset(slot_L, 0, 64 * sizeof(int) * 2);
+    memset(slot_R, 0, 64 * sizeof(int) * 2);
+
+    /* Subbands 0..31: 71/91 Hybrid Subband Processing */
+    int hybrid_idx = 0;
     for (k = 0; k < 32; k++) {
-        int re = Xbuf_slot[k][0];
-        int im = Xbuf_slot[k][1];
+        int num_sub = (k == 0) ? 8 : (k < 3 ? 4 : 1);
 
-        int b = (k < 20) ? k : 20 + ((k - 20) >> 1);
-        if (b >= num_subbands) {
-            b = num_subbands - 1;
+        for (int s = 0; s < num_sub; s++) {
+            int re, im;
+            if (k < 3) {
+                re = sub_analysis[k][s][0];
+                im = sub_analysis[k][s][1];
+            } else {
+                re = Xbuf_slot[k][0];
+                im = Xbuf_slot[k][1];
+            }
+
+            int b = (k < 20) ? k : 20 + ((k - 20) >> 1);
+            if (b >= num_param_subbands) {
+                b = num_param_subbands - 1;
+            }
+
+            int iid_idx = psd->iid_index[env][b] + 7;
+            int icc_idx = psd->icc_index[env][b];
+
+            int c1 = iid_scale_tab[iid_idx];
+            int c2 = iid_scale_tab[14 - iid_idx];
+            int cos_a = icc_cos_tab[icc_idx];
+            int sin_a = icc_sin_tab[icc_idx];
+
+            /* Fixed-point Q30 PS mixing matrix coefficients */
+            int h11 = MUL_Q30(c1, cos_a);
+            int h12 = MUL_Q30(c1, sin_a);
+            int h21 = MUL_Q30(c2, cos_a);
+            int h22 = -MUL_Q30(c2, sin_a);
+
+            /* Smoothly interpolate mixing matrix coefficients over time slot */
+            if (l == 0) {
+                psd->h11_prev[hybrid_idx] = h11;
+                psd->h12_prev[hybrid_idx] = h12;
+                psd->h21_prev[hybrid_idx] = h21;
+                psd->h22_prev[hybrid_idx] = h22;
+            } else {
+                h11 = psd->h11_prev[hybrid_idx] + ((h11 - psd->h11_prev[hybrid_idx]) >> 2);
+                h12 = psd->h12_prev[hybrid_idx] + ((h12 - psd->h12_prev[hybrid_idx]) >> 2);
+                h21 = psd->h21_prev[hybrid_idx] + ((h21 - psd->h21_prev[hybrid_idx]) >> 2);
+                h22 = psd->h22_prev[hybrid_idx] + ((h22 - psd->h22_prev[hybrid_idx]) >> 2);
+                psd->h11_prev[hybrid_idx] = h11;
+                psd->h12_prev[hybrid_idx] = h12;
+                psd->h21_prev[hybrid_idx] = h21;
+                psd->h22_prev[hybrid_idx] = h22;
+            }
+
+            /* Allpass decorrelator stage using alpha_tab coefficient g */
+            int g = alpha_tab[k & 7];
+
+            /* True Allpass filter: w[n] = g * (x[n] - w_prev) + w_prev */
+            int w_re = MUL_Q30(g, re - psd->allpass_delay[k][0][0]) + psd->allpass_delay[k][0][0];
+            int w_im = MUL_Q30(g, im - psd->allpass_delay[k][0][1]) + psd->allpass_delay[k][0][1];
+
+            psd->allpass_delay[k][0][0] = w_re;
+            psd->allpass_delay[k][0][1] = w_im;
+
+            int d_re = w_re;
+            int d_im = w_im;
+
+            /* Left channel subband = h11 * S + h12 * D */
+            int out_L_re = MUL_Q30(re, h11) + MUL_Q30(d_re, h12);
+            int out_L_im = MUL_Q30(im, h11) + MUL_Q30(d_im, h12);
+
+            /* Right channel subband = h21 * S + h22 * D */
+            int out_R_re = MUL_Q30(re, h21) + MUL_Q30(d_re, h22);
+            int out_R_im = MUL_Q30(im, h21) + MUL_Q30(d_im, h22);
+
+            /* Accumulate / synthesize sub-QMF subbands back into QMF band k */
+            slot_L[k][0] += out_L_re;
+            slot_L[k][1] += out_L_im;
+            slot_R[k][0] += out_R_re;
+            slot_R[k][1] += out_R_im;
+
+            hybrid_idx++;
         }
-
-        int iid_idx = psd->iid_index[env][b] + 7;
-        int icc_idx = psd->icc_index[env][b];
-
-        int c1 = iid_scale_tab[iid_idx];
-        int c2 = iid_scale_tab[14 - iid_idx];
-        int cos_a = icc_cos_tab[icc_idx];
-        int sin_a = icc_sin_tab[icc_idx];
-
-        /* Fixed-point Q30 PS mixing matrix coefficients */
-        int h11 = MUL_Q30(c1, cos_a);
-        int h12 = MUL_Q30(c1, sin_a);
-        int h21 = MUL_Q30(c2, cos_a);
-        int h22 = -MUL_Q30(c2, sin_a);
-
-        /* Smoothly interpolate mixing matrix coefficients over time slot */
-        if (l == 0) {
-            psd->h11_prev[k] = h11;
-            psd->h12_prev[k] = h12;
-            psd->h21_prev[k] = h21;
-            psd->h22_prev[k] = h22;
-        } else {
-            h11 = psd->h11_prev[k] + ((h11 - psd->h11_prev[k]) >> 2);
-            h12 = psd->h12_prev[k] + ((h12 - psd->h12_prev[k]) >> 2);
-            h21 = psd->h21_prev[k] + ((h21 - psd->h21_prev[k]) >> 2);
-            h22 = psd->h22_prev[k] + ((h22 - psd->h22_prev[k]) >> 2);
-            psd->h11_prev[k] = h11;
-            psd->h12_prev[k] = h12;
-            psd->h21_prev[k] = h21;
-            psd->h22_prev[k] = h22;
-        }
-
-        /* Allpass filter stage using alpha_tab coefficient g */
-        int g = alpha_tab[k & 7];
-
-        /* True Allpass filter: w[n] = g * (x[n] - w_prev) + w_prev */
-        int w_re = MUL_Q30(g, re - psd->allpass_delay[k][0][0]) + psd->allpass_delay[k][0][0];
-        int w_im = MUL_Q30(g, im - psd->allpass_delay[k][0][1]) + psd->allpass_delay[k][0][1];
-
-        psd->allpass_delay[k][0][0] = w_re;
-        psd->allpass_delay[k][0][1] = w_im;
-
-        int d_re = w_re;
-        int d_im = w_im;
-
-        /* Left channel subband = h11 * S + h12 * D */
-        slot_L[k][0] = MUL_Q30(re, h11) + MUL_Q30(d_re, h12);
-        slot_L[k][1] = MUL_Q30(im, h11) + MUL_Q30(d_im, h12);
-
-        /* Right channel subband = h21 * S + h22 * D */
-        slot_R[k][0] = MUL_Q30(re, h21) + MUL_Q30(d_re, h22);
-        slot_R[k][1] = MUL_Q30(im, h21) + MUL_Q30(d_im, h22);
     }
 
     /* Subbands 32..63: Fast block memcpy passthrough for high frequencies */

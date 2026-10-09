@@ -21,6 +21,7 @@ extern "C" {
 #define MAX_PS_ENVELOPES   5
 #define PS_NUM_SUBBANDS_20 20
 #define PS_NUM_SUBBANDS_34 34
+#define PS_MAX_HYBRID_BANDS 91
 
 typedef struct _PSHeader {
     int enable_ps_header;
@@ -51,8 +52,7 @@ typedef struct _PSData {
     int ipd_index_prev[17];
     int opd_index_prev[17];
 
-    /* Hybrid analysis filterbank history */
-    int hybrid_work[12 + 32][2];
+    /* 71/91-band Hybrid analysis filterbank history (12 delay taps per band) */
     int hybrid_buffer[5][12][2];
 
     /* Decorrelator and delay buffers */
@@ -69,11 +69,11 @@ typedef struct _PSData {
     int P_SmoothPeakDecayDiffNrg_prev[34];
     int P_prev[34];
 
-    /* Mixing matrix interpolation state */
-    int h11_prev[64];
-    int h12_prev[64];
-    int h21_prev[64];
-    int h22_prev[64];
+    /* Mixing matrix interpolation state for 91 subbands */
+    int h11_prev[PS_MAX_HYBRID_BANDS];
+    int h12_prev[PS_MAX_HYBRID_BANDS];
+    int h21_prev[PS_MAX_HYBRID_BANDS];
+    int h22_prev[PS_MAX_HYBRID_BANDS];
 
     /* Allpass state */
     int allpass_delay[32][2][2];
@@ -83,6 +83,9 @@ extern const int iid_scale_tab[15] PROGMEM;
 extern const int icc_cos_tab[8] PROGMEM;
 extern const int icc_sin_tab[8] PROGMEM;
 extern const int alpha_tab[8] PROGMEM;
+extern const int p8_13_20[7] PROGMEM;
+extern const int p4_13_20[7] PROGMEM;
+extern const int p2_13_20[7] PROGMEM;
 
 int DecodePSHeader(BitStreamInfo *bsi, PSHeader *hdr);
 int DecodePSHuffman(BitStreamInfo *bsi, int type);

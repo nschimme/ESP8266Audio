@@ -8,7 +8,7 @@
     Source License (the "RPSL") available at
     http://www.helixcommunity.org/content/rpsl unless you have licensed
     the file under the current version of the RealNetworks Community
-    Source License (the "RCSL") available at
+    Source License (the "RPSL") available at
     http://www.helixcommunity.org/content/rcsl, in which case the RCSL
     will apply. You may also obtain the license terms directly from
     RealNetworks.  You may not use this file except in compliance with
@@ -92,4 +92,37 @@ const int alpha_tab[8] PROGMEM = {
     0x10a3d70a, /* 0.14 */
     0x0cccccccc, /* 0.10 */
     0x08f5c28f  /* 0.06 */
+};
+
+/* Sub-QMF FIR filter coefficients p_8[13] in Q30 fixed-point */
+const int p8_13_20[7] PROGMEM = {
+    0x007a82bc, /* 0.0074608295 */
+    0x0174151f, /* 0.0227042095 */
+    0x02e90c8a, /* 0.0454686593 */
+    0x048259ca, /* 0.0704481023 */
+    0x05f03d29, /* 0.0927847422 */
+    0x06e6a17b, /* 0.1078233737 */
+    0x0739c36a  /* 0.1129202396 */
+};
+
+/* Sub-QMF FIR filter coefficients p_4[13] in Q30 fixed-point */
+const int p4_13_20[7] PROGMEM = {
+    0x0002f232, /* 0.0001801856 */
+    0x002e23f0, /* 0.0028162232 */
+    0x0188686e, /* 0.0240108920 */
+    0x052d9a30, /* 0.0809149448 */
+    0x0b6863d0, /* 0.1782631558 */
+    0x1224f8d0, /* 0.2835081283 */
+    0x153ebce0  /* 0.3319525281 */
+};
+
+/* Sub-QMF FIR filter coefficients p_2[13] in Q30 fixed-point */
+const int p2_13_20[7] PROGMEM = {
+    0x032ad800, /* 0.0494802100 */
+    0x0155b000, /* 0.0208552100 */
+    0xfe97f400, /* -0.0219762100 */
+    0xfba7f000, /* -0.0678842100 */
+    0xfaf44800, /* -0.0789122100 */
+    0x02a7b800, /* 0.0414842100 */
+    0x11626000  /* 0.2716302100 */
 };
