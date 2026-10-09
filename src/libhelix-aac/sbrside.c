@@ -566,6 +566,7 @@ void UnpackSBRSingleChannel(BitStreamInfo *bsi, PSInfoSBR *psi, int chBase) {
             } else
 #endif
             {
+                (void)ext_id;
                 while (bitsLeft >= 8) {
                     GetBits(bsi, 8);
                     bitsLeft -= 8;
