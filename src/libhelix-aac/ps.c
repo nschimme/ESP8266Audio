@@ -171,25 +171,6 @@ int DecodePSDataPayload(BitStreamInfo *bsi, PSData *psd) {
         }
     }
 
-    /* Compute mixing matrix coefficients in Q30 fixed-point */
-    for (env = 0; env < hdr->num_env; env++) {
-        for (b = 0; b < num_subbands; b++) {
-            int iid_idx = psd->iid_index[env][b] + 7;
-            int icc_idx = psd->icc_index[env][b];
-
-            int c1 = iid_scale_tab[iid_idx];
-            int c2 = iid_scale_tab[14 - iid_idx];
-            int cos_a = icc_cos_tab[icc_idx];
-            int sin_a = icc_sin_tab[icc_idx];
-
-            /* Fixed-point Q30 PS mixing matrix coefficients */
-            psd->h11[env][b] = MUL_Q30(c1, cos_a);
-            psd->h12[env][b] = MUL_Q30(c1, sin_a);
-            psd->h21[env][b] = MUL_Q30(c2, cos_a);
-            psd->h22[env][b] = -MUL_Q30(c2, sin_a);
-        }
-    }
-
     return 0;
 }
 
@@ -211,10 +192,7 @@ void ProcessPSSlot(PSData *psd, int Xbuf_slot[64][2], int slot_L[64][2], int slo
         }
     }
 
-    const int *h11_tab = psd->h11[env];
-    const int *h12_tab = psd->h12[env];
-    const int *h21_tab = psd->h21[env];
-    const int *h22_tab = psd->h22[env];
+    int num_subbands = (hdr->iid_mode < 3) ? PS_NUM_SUBBANDS_20 : PS_NUM_SUBBANDS_34;
 
     /* Subbands 0..31: Allpass decorrelation and matrix mixing */
     for (k = 0; k < 32; k++) {
@@ -222,10 +200,40 @@ void ProcessPSSlot(PSData *psd, int Xbuf_slot[64][2], int slot_L[64][2], int slo
         int im = Xbuf_slot[k][1];
 
         int b = (k < 20) ? k : 20 + ((k - 20) >> 1);
-        int h11 = h11_tab[b];
-        int h12 = h12_tab[b];
-        int h21 = h21_tab[b];
-        int h22 = h22_tab[b];
+        if (b >= num_subbands) {
+            b = num_subbands - 1;
+        }
+
+        int iid_idx = psd->iid_index[env][b] + 7;
+        int icc_idx = psd->icc_index[env][b];
+
+        int c1 = iid_scale_tab[iid_idx];
+        int c2 = iid_scale_tab[14 - iid_idx];
+        int cos_a = icc_cos_tab[icc_idx];
+        int sin_a = icc_sin_tab[icc_idx];
+
+        /* Fixed-point Q30 PS mixing matrix coefficients */
+        int h11 = MUL_Q30(c1, cos_a);
+        int h12 = MUL_Q30(c1, sin_a);
+        int h21 = MUL_Q30(c2, cos_a);
+        int h22 = -MUL_Q30(c2, sin_a);
+
+        /* Smoothly interpolate mixing matrix coefficients over time slot */
+        if (l == 0) {
+            psd->h11_prev[k] = h11;
+            psd->h12_prev[k] = h12;
+            psd->h21_prev[k] = h21;
+            psd->h22_prev[k] = h22;
+        } else {
+            h11 = psd->h11_prev[k] + ((h11 - psd->h11_prev[k]) >> 2);
+            h12 = psd->h12_prev[k] + ((h12 - psd->h12_prev[k]) >> 2);
+            h21 = psd->h21_prev[k] + ((h21 - psd->h21_prev[k]) >> 2);
+            h22 = psd->h22_prev[k] + ((h22 - psd->h22_prev[k]) >> 2);
+            psd->h11_prev[k] = h11;
+            psd->h12_prev[k] = h12;
+            psd->h21_prev[k] = h21;
+            psd->h22_prev[k] = h22;
+        }
 
         /* Allpass filter stage using alpha_tab coefficient g */
         int g = alpha_tab[k & 7];
