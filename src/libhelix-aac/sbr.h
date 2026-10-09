@@ -48,7 +48,6 @@
 
 #include "aaccommon.h"
 #include "bitstream.h"
-#include "ConfigHelix.h"
 #if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
 #include "ps.h"
 #endif
