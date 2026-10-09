@@ -91,6 +91,7 @@ int DecodePSHeader(BitStreamInfo *bsi, PSHeader *hdr) {
     Description: Decode variable-length Huffman code for PS IID and ICC delta parameters
  **************************************************************************************/
 int DecodePSHuffman(BitStreamInfo *bsi, int type) {
+    ASSERT(type == 0 || type == 1);
     (void)type;
     int code = GetBits(bsi, 1);
     if (code == 0) {
