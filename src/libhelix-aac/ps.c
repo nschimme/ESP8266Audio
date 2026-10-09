@@ -8,7 +8,7 @@
     Source License (the "RPSL") available at
     http://www.helixcommunity.org/content/rpsl unless you have licensed
     the file under the current version of the RealNetworks Community
-    Source License (the "RCSL") available at
+    Source License (the "RPSL") available at
     http://www.helixcommunity.org/content/rcsl, in which case the RCSL
     will apply. You may also obtain the license terms directly from
     RealNetworks.  You may not use this file except in compliance with
@@ -39,6 +39,12 @@
 #include "sbr.h"
 #include "assembly.h"
 #include <string.h>
+
+#if defined(ESP8266) || defined(ESP32)
+#define READ_TAB_INT(tab, idx) pgm_read_dword(&(tab)[idx])
+#else
+#define READ_TAB_INT(tab, idx) ((tab)[idx])
+#endif
 
 /* Fixed point multiply: Q30 * Q30 -> Q30 */
 static inline int MUL_Q30(int a, int b) {
@@ -181,7 +187,6 @@ int DecodePSDataPayload(BitStreamInfo *bsi, PSData *psd) {
  **************************************************************************************/
 static void HybridAnalysisFilterbank(PSData *psd, int band, int input[2], int sub_out[12][2], int num_subbands) {
     int j;
-    int *buf = psd->hybrid_buffer[band][0];
 
     /* Shift history buffer by 1 sample */
     memmove(psd->hybrid_buffer[band][1], psd->hybrid_buffer[band][0], 11 * sizeof(int) * 2);
@@ -193,7 +198,7 @@ static void HybridAnalysisFilterbank(PSData *psd, int band, int input[2], int su
         for (int q = 0; q < 8; q++) {
             int acc_re = 0, acc_im = 0;
             for (j = 0; j < 12; j++) {
-                int coeff = (j < 6) ? p8_13_20[j] : p8_13_20[12 - j];
+                int coeff = READ_TAB_INT(p8_13_20, (j < 6) ? j : (12 - j));
                 acc_re += MUL_Q30(coeff, psd->hybrid_buffer[band][j][0]);
                 acc_im += MUL_Q30(coeff, psd->hybrid_buffer[band][j][1]);
             }
@@ -205,7 +210,7 @@ static void HybridAnalysisFilterbank(PSData *psd, int band, int input[2], int su
         for (int q = 0; q < 4; q++) {
             int acc_re = 0, acc_im = 0;
             for (j = 0; j < 12; j++) {
-                int coeff = (j < 6) ? p4_13_20[j] : p4_13_20[12 - j];
+                int coeff = READ_TAB_INT(p4_13_20, (j < 6) ? j : (12 - j));
                 acc_re += MUL_Q30(coeff, psd->hybrid_buffer[band][j][0]);
                 acc_im += MUL_Q30(coeff, psd->hybrid_buffer[band][j][1]);
             }
@@ -272,10 +277,10 @@ void ProcessPSSlot(PSData *psd, int Xbuf_slot[64][2], int slot_L[64][2], int slo
             int iid_idx = psd->iid_index[env][b] + 7;
             int icc_idx = psd->icc_index[env][b];
 
-            int c1 = iid_scale_tab[iid_idx];
-            int c2 = iid_scale_tab[14 - iid_idx];
-            int cos_a = icc_cos_tab[icc_idx];
-            int sin_a = icc_sin_tab[icc_idx];
+            int c1 = READ_TAB_INT(iid_scale_tab, iid_idx);
+            int c2 = READ_TAB_INT(iid_scale_tab, 14 - iid_idx);
+            int cos_a = READ_TAB_INT(icc_cos_tab, icc_idx);
+            int sin_a = READ_TAB_INT(icc_sin_tab, icc_idx);
 
             /* Fixed-point Q30 PS mixing matrix coefficients */
             int h11 = MUL_Q30(c1, cos_a);
@@ -301,7 +306,7 @@ void ProcessPSSlot(PSData *psd, int Xbuf_slot[64][2], int slot_L[64][2], int slo
             }
 
             /* Allpass decorrelator stage using alpha_tab coefficient g */
-            int g = alpha_tab[k & 7];
+            int g = READ_TAB_INT(alpha_tab, k & 7);
 
             /* True Allpass filter: w[n] = g * (x[n] - w_prev) + w_prev */
             int w_re = MUL_Q30(g, re - psd->allpass_delay[k][0][0]) + psd->allpass_delay[k][0][0];

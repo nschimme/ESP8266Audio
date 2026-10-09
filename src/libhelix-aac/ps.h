@@ -11,6 +11,7 @@
 #include "aaccommon.h"
 #include "bitstream.h"
 #include <pgmspace.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,41 +25,41 @@ extern "C" {
 #define PS_MAX_HYBRID_BANDS 91
 
 typedef struct _PSHeader {
-    int enable_ps_header;
-    int enable_iid;
-    int iid_mode;
-    int enable_icc;
-    int icc_mode;
-    int enable_ext;
-    int enable_ipdopd;
-    int ipd_mode;
-    int use34hybrid_bands;
-    int num_env;
-    int border_position[MAX_PS_ENVELOPES + 1];
-    int iid_dt[MAX_PS_ENVELOPES];
-    int icc_dt[MAX_PS_ENVELOPES];
-    int ipd_dt[MAX_PS_ENVELOPES];
-    int opd_dt[MAX_PS_ENVELOPES];
+    uint8_t enable_ps_header;
+    uint8_t enable_iid;
+    uint8_t iid_mode;
+    uint8_t enable_icc;
+    uint8_t icc_mode;
+    uint8_t enable_ext;
+    uint8_t enable_ipdopd;
+    uint8_t ipd_mode;
+    uint8_t use34hybrid_bands;
+    uint8_t num_env;
+    uint8_t border_position[MAX_PS_ENVELOPES + 1];
+    int8_t  iid_dt[MAX_PS_ENVELOPES];
+    int8_t  icc_dt[MAX_PS_ENVELOPES];
+    int8_t  ipd_dt[MAX_PS_ENVELOPES];
+    int8_t  opd_dt[MAX_PS_ENVELOPES];
 } PSHeader;
 
 typedef struct _PSData {
     PSHeader hdr;
-    int iid_index[MAX_PS_ENVELOPES][34];
-    int icc_index[MAX_PS_ENVELOPES][34];
-    int ipd_index[MAX_PS_ENVELOPES][17];
-    int opd_index[MAX_PS_ENVELOPES][17];
-    int iid_index_prev[34];
-    int icc_index_prev[34];
-    int ipd_index_prev[17];
-    int opd_index_prev[17];
+    int8_t  iid_index[MAX_PS_ENVELOPES][34];
+    int8_t  icc_index[MAX_PS_ENVELOPES][34];
+    int8_t  ipd_index[MAX_PS_ENVELOPES][17];
+    int8_t  opd_index[MAX_PS_ENVELOPES][17];
+    int8_t  iid_index_prev[34];
+    int8_t  icc_index_prev[34];
+    int8_t  ipd_index_prev[17];
+    int8_t  opd_index_prev[17];
 
     /* 71/91-band Hybrid analysis filterbank history (12 delay taps per band) */
     int hybrid_buffer[5][12][2];
 
     /* Decorrelator and delay buffers */
-    int delay_buf_index_delay[64];
-    int delay_buf_index_ser[3];
-    int saved_delay;
+    uint8_t delay_buf_index_delay[64];
+    uint8_t delay_buf_index_ser[3];
+    uint8_t saved_delay;
     int delay_Qmf[2][64][2];
     int delay_SubQmf[2][32][2];
     int delay_Qmf_ser[3][5][64][2];
