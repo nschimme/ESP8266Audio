@@ -2,6 +2,7 @@
 #include "AudioFileSourceSTDIO.h"
 #include "AudioOutputSTDIO.h"
 #include "AudioGeneratorAAC.h"
+#include <string>
 
 struct TestCase {
     const char *name;
@@ -9,8 +10,45 @@ struct TestCase {
     const char *outfile;
 };
 
+static std::string DeriveOutputFilename(const std::string &infile) {
+    size_t dot_pos = infile.find_last_of('.');
+    size_t slash_pos = infile.find_last_of("/\\");
+
+    /* Ensure dot belongs to extension, not parent directory */
+    if (dot_pos != std::string::npos && (slash_pos == std::string::npos || dot_pos > slash_pos)) {
+        return infile.substr(0, dot_pos) + ".wav";
+    }
+    return infile + ".wav";
+}
+
+static std::string ResolveInputPath(const char *rel_path) {
+    AudioFileSourceSTDIO test1(rel_path);
+    if (test1.isOpen()) {
+        return rel_path;
+    }
+
+    /* Handle path resolution whether invoked from repo root or tests/host/ */
+    std::string path_str = rel_path;
+    if (path_str.rfind("../../", 0) == 0) {
+        std::string stripped = path_str.substr(6);
+        AudioFileSourceSTDIO test2(stripped.c_str());
+        if (test2.isOpen()) {
+            return stripped;
+        }
+    } else {
+        std::string prepended = "../../" + path_str;
+        AudioFileSourceSTDIO test3(prepended.c_str());
+        if (test3.isOpen()) {
+            return prepended;
+        }
+    }
+
+    return rel_path;
+}
+
 static bool RunDecodeTest(const TestCase &tc) {
-    AudioFileSourceSTDIO in(tc.infile);
+    std::string resolved_in = ResolveInputPath(tc.infile);
+    AudioFileSourceSTDIO in(resolved_in.c_str());
     if (!in.isOpen()) {
         printf("ERROR: Could not open test sample file: %s\n", tc.infile);
         return false;
@@ -27,9 +65,9 @@ static bool RunDecodeTest(const TestCase &tc) {
 
     AudioGeneratorAAC aac(heap_space, 200000);
 
-    printf("=== Running Test: %s [%s -> %s] ===\n", tc.name, tc.infile, tc.outfile);
+    printf("=== Running Test: %s [%s -> %s] ===\n", tc.name, resolved_in.c_str(), tc.outfile);
     if (!aac.begin(&in, &out)) {
-        printf("ERROR: aac.begin failed for %s!\n", tc.infile);
+        printf("ERROR: aac.begin failed for %s!\n", resolved_in.c_str());
         free(heap_space);
         return false;
     }
@@ -49,18 +87,20 @@ static bool RunDecodeTest(const TestCase &tc) {
 int main(int argc, char **argv)
 {
     if (argc > 1) {
+        std::string infile = argv[1];
+        std::string outfile = (argc > 2) ? argv[2] : DeriveOutputFilename(infile);
         TestCase custom_tc = {
             "Custom Input",
-            argv[1],
-            (argc > 2) ? argv[2] : "out.aac.wav"
+            infile.c_str(),
+            outfile.c_str()
         };
         return RunDecodeTest(custom_tc) ? 0 : 1;
     }
 
     const TestCase test_suite[] = {
-        {"AAC-LC Default Sample", "../../examples/PlayAACFromPROGMEM/homer-lc.aac", "out_lc.wav"},
-        {"HE-AAC v1 SBR Sample",  "../../examples/PlayAACFromPROGMEM/homer-he-v1.aac", "out_he_v1.wav"},
-        {"HE-AAC v2 PS Sample",   "../../examples/PlayAACFromPROGMEM/homer-he-v2.aac", "out_he_v2.wav"},
+        {"AAC-LC Default Sample", "examples/PlayAACFromPROGMEM/homer-lc.aac",    "out_lc.wav"},
+        {"HE-AAC v1 SBR Sample",  "examples/PlayAACFromPROGMEM/homer-he-v1.aac", "out_he_v1.wav"},
+        {"HE-AAC v2 PS Sample",   "examples/PlayAACFromPROGMEM/homer-he-v2.aac", "out_he_v2.wav"},
     };
 
     bool all_passed = true;
