@@ -102,30 +102,9 @@ extern "C" {
 #define AAC_PROFILE_SSR		2
 
 /* define these to enable decoder features */
-#define AAC_ENABLE_MPEG4
-
-// On ESP8266: enable Downsampled SBR and Parametric Stereo (HE-AAC v2)
-#ifdef ESP8266
-#  ifndef AAC_ENABLE_SBR
-#    define AAC_ENABLE_SBR 1
-#  endif
-#  ifndef AAC_ENABLE_PS
-#    define AAC_ENABLE_PS 1
-#  endif
-#  ifndef AAC_ENABLE_SBR_DOWNSAMPLED
-#    define AAC_ENABLE_SBR_DOWNSAMPLED 1
-#  endif
-#else
-#  ifndef AAC_ENABLE_SBR
-#    define AAC_ENABLE_SBR 1
-#  endif
-#  ifndef AAC_ENABLE_PS
-#    define AAC_ENABLE_PS 1
-#  endif
-#  ifndef AAC_ENABLE_SBR_DOWNSAMPLED
-#    define AAC_ENABLE_SBR_DOWNSAMPLED 0
-#  endif
-#endif
+#define AAC_ENABLE_MPEG4 1
+#define AAC_ENABLE_SBR   1
+#define AAC_ENABLE_PS    1
 
 enum {
     ERR_AAC_NONE                          =   0,

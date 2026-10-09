@@ -54,6 +54,17 @@
 #include "aacdec.h"
 #include "statname.h"
 
+// On ESP8266: enable Downsampled SBR mode to save RAM
+#ifdef ESP8266
+#  ifndef AAC_ENABLE_SBR_DOWNSAMPLED
+#    define AAC_ENABLE_SBR_DOWNSAMPLED 1
+#  endif
+#else
+#  ifndef AAC_ENABLE_SBR_DOWNSAMPLED
+#    define AAC_ENABLE_SBR_DOWNSAMPLED 0
+#  endif
+#endif
+
 /* 12-bit syncword */
 #define	SYNCWORDH			0xff
 #define	SYNCWORDL			0xf0
