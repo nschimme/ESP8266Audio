@@ -102,9 +102,7 @@ extern "C" {
 #define AAC_PROFILE_SSR		2
 
 /* define these to enable decoder features */
-#define AAC_ENABLE_MPEG4 1
-#define AAC_ENABLE_SBR   1
-#define AAC_ENABLE_PS    1
+#define AAC_ENABLE_MPEG4
 
 enum {
     ERR_AAC_NONE                          =   0,

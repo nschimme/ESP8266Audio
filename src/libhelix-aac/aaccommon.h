@@ -49,10 +49,13 @@
 #include <Arduino.h>
 #include <pgmspace.h>
 
-#pragma GCC optimize ("O3")
+#ifndef AAC_ENABLE_SBR
+#  define AAC_ENABLE_SBR 1
+#endif
 
-#include "aacdec.h"
-#include "statname.h"
+#ifndef AAC_ENABLE_PS
+#  define AAC_ENABLE_PS 1
+#endif
 
 // On ESP8266: enable Downsampled SBR mode to save RAM
 #ifdef ESP8266
@@ -64,6 +67,11 @@
 #    define AAC_ENABLE_SBR_DOWNSAMPLED 0
 #  endif
 #endif
+
+#pragma GCC optimize ("O3")
+
+#include "aacdec.h"
+#include "statname.h"
 
 /* 12-bit syncword */
 #define	SYNCWORDH			0xff
