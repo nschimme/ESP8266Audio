@@ -8,7 +8,7 @@
     Source License (the "RPSL") available at
     http://www.helixcommunity.org/content/rpsl unless you have licensed
     the file under the current version of the RealNetworks Community
-    Source License (the "RPSL") available at
+    Source License (the "RCSL") available at
     http://www.helixcommunity.org/content/rcsl, in which case the RCSL
     will apply. You may also obtain the license terms directly from
     RealNetworks.  You may not use this file except in compliance with
