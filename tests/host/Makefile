@@ -20,7 +20,8 @@ libhelix_aac=../../src/libhelix-aac/decelmnt.c ../../src/libhelix-aac/dct4.c ../
 ../../src/libhelix-aac/trigtabs.c ../../src/libhelix-aac/fft.c ../../src/libhelix-aac/pns.c ../../src/libhelix-aac/sbrfreq.c \
 ../../src/libhelix-aac/sbrside.c ../../src/libhelix-aac/sbrhfadj.c ../../src/libhelix-aac/buffers.c ../../src/libhelix-aac/bitstream.c \
 ../../src/libhelix-aac/noiseless.c ../../src/libhelix-aac/imdct.c ../../src/libhelix-aac/aacdec.c ../../src/libhelix-aac/sbrhfgen.c \
-../../src/libhelix-aac/sbrqmf.c ../../src/libhelix-aac/huffmanaac.c ../../src/libhelix-aac/sbr.c ../../src/libhelix-aac/sbrimdct.c
+../../src/libhelix-aac/sbrqmf.c ../../src/libhelix-aac/huffmanaac.c ../../src/libhelix-aac/sbr.c ../../src/libhelix-aac/sbrimdct.c \
+../../src/libhelix-aac/ps.c ../../src/libhelix-aac/pstabs.c
 
 libflac=../../src/libflac/md5.c ../../src/libflac/window.c ../../src/libflac/memory.c ../../src/libflac/cpu.c ../../src/libflac/fixed.c \
 ../../src/libflac/format.c ../../src/libflac/lpc.c ../../src/libflac/crc.c ../../src/libflac/bitreader.c ../../src/libflac/bitmath.c \
@@ -31,14 +32,14 @@ libflac=../../src/libflac/md5.c ../../src/libflac/window.c ../../src/libflac/mem
 ../../src/libflac/bitreader.c ../../src/libflac/bitmath.c ../../src/libflac/stream_decoder.c ../../src/libflac/float.c
 
 
-CCOPTS=-g -Wunused-parameter -Wall -m32 -include Arduino.h -Wstack-usage=300
-CPPOPTS=-g -Wunused-parameter -Wall -std=c++11 -m32 -Wstack-usage=300 -include Arduino.h
+CCOPTS=-g -Wunused-parameter -Wall  -include Arduino.h -Wstack-usage=300
+CPPOPTS=-g -Wunused-parameter -Wall -std=c++11  -Wstack-usage=300 -include Arduino.h
 
 .phony: all
 
 all: mp3 aac wav midi opus flac mod id3
 
-# Native build (no -m32). Parses only the ID3 filter against synthetic files.
+# Native build (no ). Parses only the ID3 filter against synthetic files.
 id3: FORCE
 	python3 id3fix/gen_id3_fixtures.py
 	g++ -g -Wall -std=c++11 -include Arduino.h -o id3 id3.cpp Serial.cpp \

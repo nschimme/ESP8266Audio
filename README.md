@@ -11,7 +11,7 @@ All this code is released under the GPL, and all of it is to be used at your own
 
 * The MOD and MP3 routines were taken from StellarPlayer and libMAD respectively.
 * The software I2S delta-sigma 32x oversampling DAC was my own creation, and sounds quite good if I do say so myself.
-* The AAC decode code is from the Helix project and licensed under RealNetwork's RSPL license.  For commercial use you're still going to need the usual AAC licensing from [Via Licensing](http://www.via-corp.com/us/en/licensing/aac/overview.html).  On the ESP32, AAC-SBR is supported (many webradio stations use this to reduce bandwidth even further).  The ESP8266, however, does not support it due to a lack of onboard RAM.
+* The AAC decode code is from the Helix project and licensed under RealNetwork's RSPL license.  For commercial use you're still going to need the usual AAC licensing from [Via Licensing](http://www.via-corp.com/us/en/licensing/aac/overview.html).  On ESP32, Pico, and host platforms, AAC-SBR (HE-AAC v1) and Parametric Stereo (HE-AAC v2) are supported. On ESP8266, Downsampled SBR mode is supported to fit within available RAM.
 * MIDI decoding comes from a highly ported [MIDITONES](https://github.com/LenShustek/miditones) combined with a massively memory-optimized [TinySoundFont](https://github.com/schellingb/TinySoundFont), see the respective source files for more information.
 * Opus is from [Xiph.org](https://xiph.org) with the Xiph license and patent described in src/{opusfile,libggg,libopus}/COPYING.
 
@@ -150,7 +150,7 @@ AudioGeneratorFLAC:  Plays FLAC files via ported libflac-1.3.2.  On the order of
 
 AudioGeneratorMIDI:  Plays a MIDI file using a wavetable synthesizer and a SoundFont2 wavetable input.  Theoretically up to 16 simultaneous notes available, but depending on the memory needed for the SF2 structures you may not be able to get that many before hitting OOM.
 
-AudioGeneratorAAC:  Requires about 30KB of heap and plays a mono or stereo AAC file using the Helix fixed-point AAC decoder.
+AudioGeneratorAAC:  Requires about 30KB of heap (or up to ~85KB for full HE-AAC v2 SBR/PS) and plays mono or stereo AAC / HE-AAC v1 / HE-AAC v2 files using the Helix fixed-point AAC decoder.
 
 AudioGeneratorRTTTL:  Enjoy the pleasures of monophonic, 4-octave ringtones on your ESP8266.  Very low memory and CPU requirements for simple tunes.
 
