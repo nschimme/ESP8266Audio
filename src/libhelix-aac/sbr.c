@@ -349,8 +349,13 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
             qmfsBands = 32;
             for (l = 0; l < 32; l++) {
                 /* step 4 - synthesis QMF */
+#if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
+                outptr += 32 * aacDecInfo->nChans;
+#else
                 QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
                 outptr += 64 * aacDecInfo->nChans;
+#endif
             }
         } else {
             /*  if previous frame had lower SBR starting freq than current, zero out the synthesized QMF
@@ -393,11 +398,11 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
                     ProcessPSSlot(&psi->psData, psi->XBuf[l + HF_ADJ], slot_L, slot_R, l);
 
                     /* Synthesize Left channel QMF for slot l */
-                    QMFSynthesis32(slot_L[0], psi->delayQMFS[0], &(psi->delayIdxQMFS[0]), qmfsBands, outL, 2);
+                    QMFSynthesis(slot_L[0], psi->delayQMFS[0], &(psi->delayIdxQMFS[0]), qmfsBands, outL, 2);
                     outL += 32 * 2;
 
                     /* Synthesize Right channel QMF for slot l */
-                    QMFSynthesis32(slot_R[0], psi->delayQMFS[1], &(psi->delayIdxQMFS[1]), qmfsBands, outR, 2);
+                    QMFSynthesis(slot_R[0], psi->delayQMFS[1], &(psi->delayIdxQMFS[1]), qmfsBands, outR, 2);
                     outR += 32 * 2;
                 }
                 break;
@@ -428,7 +433,7 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
 #if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
             qmfsBands = 32;
             for (l = 0; l < 32; l++) {
-                QMFSynthesis32(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
                 outptr += 32 * aacDecInfo->nChans;
             }
 #else

@@ -118,7 +118,6 @@
 #define SqrtFix							STATNAME(SqrtFix)
 #define QMFAnalysis						STATNAME(QMFAnalysis)
 #define QMFSynthesis					STATNAME(QMFSynthesis)
-#define QMFSynthesis32					STATNAME(QMFSynthesis32)
 #define GetSampRateIdx					STATNAME(GetSampRateIdx)
 #define UnpackSBRHeader					STATNAME(UnpackSBRHeader)
 #define UnpackSBRSingleChannel			STATNAME(UnpackSBRSingleChannel)
@@ -375,7 +374,6 @@ int SqrtFix(int x, int fBitsIn, int *fBitsOut);
 /* sbrqmf.c */
 int QMFAnalysis(int *inbuf, int *delay, int *XBuf, int fBitsIn, int *delayIdx, int qmfaBands);
 void QMFSynthesis(int *inbuf, int *delay, int *delayIdx, int qmfsBands, short *outbuf, int nChans);
-void QMFSynthesis32(int *inbuf, int *delay, int *delayIdx, int qmfsBands, short *outbuf, int nChans);
 
 /* sbrside.c */
 int GetSampRateIdx(int sampRate);

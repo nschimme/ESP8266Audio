@@ -55,7 +55,7 @@
 #    define AAC_ENABLE_SBR 1
 #  endif
 #  ifndef AAC_ENABLE_SBR_DOWNSAMPLED
-#    define AAC_ENABLE_SBR_DOWNSAMPLED 0
+#    define AAC_ENABLE_SBR_DOWNSAMPLED 1
 #  endif
 #else
 #  ifndef AAC_ENABLE_SBR
@@ -65,7 +65,7 @@
 #    define AAC_ENABLE_PS 1
 #  endif
 #  ifndef AAC_ENABLE_SBR_DOWNSAMPLED
-#    define AAC_ENABLE_SBR_DOWNSAMPLED 1
+#    define AAC_ENABLE_SBR_DOWNSAMPLED 0
 #  endif
 #endif
 
