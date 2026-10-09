@@ -49,29 +49,6 @@
 #include <Arduino.h>
 #include <pgmspace.h>
 
-// On ESP8266: enable Downsampled SBR and Parametric Stereo (HE-AAC v2)
-#ifdef ESP8266
-#  ifndef AAC_ENABLE_SBR
-#    define AAC_ENABLE_SBR 1
-#  endif
-#  ifndef AAC_ENABLE_PS
-#    define AAC_ENABLE_PS 1
-#  endif
-#  ifndef AAC_ENABLE_SBR_DOWNSAMPLED
-#    define AAC_ENABLE_SBR_DOWNSAMPLED 1
-#  endif
-#else
-#  ifndef AAC_ENABLE_SBR
-#    define AAC_ENABLE_SBR 1
-#  endif
-#  ifndef AAC_ENABLE_PS
-#    define AAC_ENABLE_PS 1
-#  endif
-#  ifndef AAC_ENABLE_SBR_DOWNSAMPLED
-#    define AAC_ENABLE_SBR_DOWNSAMPLED 0
-#  endif
-#endif
-
 #pragma GCC optimize ("O3")
 
 #include "aacdec.h"
