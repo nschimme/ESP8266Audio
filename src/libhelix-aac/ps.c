@@ -1,38 +1,38 @@
 /* ***** BEGIN LICENSE BLOCK *****
- * Source last modified: $Id: ps.c,v 1.0 2023/10/01 00:00:00 $
- *
- * Portions Copyright (c) 1995-2005 RealNetworks, Inc. All Rights Reserved.
- *
- * The contents of this file, and the files included with this file,
- * are subject to the current version of the RealNetworks Public
- * Source License (the "RPSL") available at
- * http://www.helixcommunity.org/content/rpsl unless you have licensed
- * the file under the current version of the RealNetworks Community
- * Source License (the "RCSL") available at
- * http://www.helixcommunity.org/content/rcsl, in which case the RCSL
- * will apply. You may also obtain the license terms directly from
- * RealNetworks.  You may not use this file except in compliance with
- * the RPSL or, if you have a valid RCSL with RealNetworks applicable
- * to this file, the RCSL.  Please see the applicable RPSL or RCSL for
- * the rights, obligations and limitations governing use of the
- * contents of the file.
- *
- * This file is part of the Helix DNA Technology. RealNetworks is the
- * developer of the Original Code and owns the copyrights in the
- * portions it created.
- *
- * This file, and the files included with this file, is distributed
- * and made available on an 'AS IS' basis, WITHOUT WARRANTY OF ANY
- * KIND, EITHER EXPRESS OR IMPLIED, AND REALNETWORKS HEREBY DISCLAIMS
- * ALL SUCH WARRANTIES, INCLUDING WITHOUT LIMITATION, ANY WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, QUIET
- * ENJOYMENT OR NON-INFRINGEMENT.
- *
- * Technology Compatibility Kit Test Suite(s) Location:
- *    http://www.helixcommunity.org/content/tck
- *
- * Contributor(s):
- *
+    Source last modified: $Id: ps.c,v 1.0 2023/10/01 00:00:00 $
+
+    Portions Copyright (c) 1995-2005 RealNetworks, Inc. All Rights Reserved.
+
+    The contents of this file, and the files included with this file,
+    are subject to the current version of the RealNetworks Public
+    Source License (the "RPSL") available at
+    http://www.helixcommunity.org/content/rpsl unless you have licensed
+    the file under the current version of the RealNetworks Community
+    Source License (the "RCSL") available at
+    http://www.helixcommunity.org/content/rcsl, in which case the RCSL
+    will apply. You may also obtain the license terms directly from
+    RealNetworks.  You may not use this file except in compliance with
+    the RPSL or, if you have a valid RCSL with RealNetworks applicable
+    to this file, the RCSL.  Please see the applicable RPSL or RCSL for
+    the rights, obligations and limitations governing use of the
+    contents of the file.
+
+    This file is part of the Helix DNA Technology. RealNetworks is the
+    developer of the Original Code and owns the copyrights in the
+    portions it created.
+
+    This file, and the files included with this file, is distributed
+    and made available on an 'AS IS' basis, WITHOUT WARRANTY OF ANY
+    KIND, EITHER EXPRESS OR IMPLIED, AND REALNETWORKS HEREBY DISCLAIMS
+    ALL SUCH WARRANTIES, INCLUDING WITHOUT LIMITATION, ANY WARRANTIES
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, QUIET
+    ENJOYMENT OR NON-INFRINGEMENT.
+
+    Technology Compatibility Kit Test Suite(s) Location:
+      http://www.helixcommunity.org/content/tck
+
+    Contributor(s):
+
  * ***** END LICENSE BLOCK ***** */
 
 #include "ps.h"
@@ -48,12 +48,11 @@ static inline int MUL_Q30(int a, int b) {
 static const int num_env_tab[4] = {1, 2, 3, 4};
 
 /**************************************************************************************
- * Function:    DecodePSHeader
- *
- * Description: Unpack Parametric Stereo header parameters from bitstream
+    Function:    DecodePSHeader
+
+    Description: Unpack Parametric Stereo header parameters from bitstream
  **************************************************************************************/
-int DecodePSHeader(BitStreamInfo *bsi, PSHeader *hdr)
-{
+int DecodePSHeader(BitStreamInfo *bsi, PSHeader *hdr) {
     hdr->enable_ps_header = GetBits(bsi, 1);
     if (hdr->enable_ps_header) {
         hdr->enable_iid = GetBits(bsi, 1);
@@ -72,7 +71,7 @@ int DecodePSHeader(BitStreamInfo *bsi, PSHeader *hdr)
             hdr->border_position[1] = 32;
         } else {
             int e;
-            for (e = 1; e <= hdr->num_env; e++) {
+            for (e = 1; e <= hdr->num_env && e <= MAX_PS_ENVELOPES; e++) {
                 hdr->border_position[e] = GetBits(bsi, 5);
             }
         }
@@ -87,15 +86,16 @@ int DecodePSHeader(BitStreamInfo *bsi, PSHeader *hdr)
 }
 
 /**************************************************************************************
- * Function:    DecodePSHuffman
- *
- * Description: Decode variable-length Huffman code for PS IID and ICC delta parameters
+    Function:    DecodePSHuffman
+
+    Description: Decode variable-length Huffman code for PS IID and ICC delta parameters
  **************************************************************************************/
-int DecodePSHuffman(BitStreamInfo *bsi, int type)
-{
+int DecodePSHuffman(BitStreamInfo *bsi, int type) {
     (void)type;
     int code = GetBits(bsi, 1);
-    if (code == 0) return 0;
+    if (code == 0) {
+        return 0;
+    }
 
     int sign = GetBits(bsi, 1);
     int val = 1;
@@ -106,12 +106,11 @@ int DecodePSHuffman(BitStreamInfo *bsi, int type)
 }
 
 /**************************************************************************************
- * Function:    DecodePSDataPayload
- *
- * Description: Decode Huffman delta-coded IID and ICC indices for subbands
+    Function:    DecodePSDataPayload
+
+    Description: Decode Huffman delta-coded IID and ICC indices for subbands
  **************************************************************************************/
-int DecodePSDataPayload(BitStreamInfo *bsi, PSData *psd)
-{
+int DecodePSDataPayload(BitStreamInfo *bsi, PSData *psd) {
     int env, b, num_subbands;
     PSHeader *hdr = &psd->hdr;
 
@@ -131,8 +130,12 @@ int DecodePSDataPayload(BitStreamInfo *bsi, PSData *psd)
                     psd->iid_index[env][b] = psd->iid_index[env - 1][b] + delta;
                 }
                 /* Clip index to [-7, 7] range */
-                if (psd->iid_index[env][b] < -7) psd->iid_index[env][b] = -7;
-                if (psd->iid_index[env][b] > 7) psd->iid_index[env][b] = 7;
+                if (psd->iid_index[env][b] < -7) {
+                    psd->iid_index[env][b] = -7;
+                }
+                if (psd->iid_index[env][b] > 7) {
+                    psd->iid_index[env][b] = 7;
+                }
             }
         }
         for (b = 0; b < num_subbands; b++) {
@@ -154,8 +157,12 @@ int DecodePSDataPayload(BitStreamInfo *bsi, PSData *psd)
                     psd->icc_index[env][b] = psd->icc_index[env - 1][b] + delta;
                 }
                 /* Clip index to [0, 7] range */
-                if (psd->icc_index[env][b] < 0) psd->icc_index[env][b] = 0;
-                if (psd->icc_index[env][b] > 7) psd->icc_index[env][b] = 7;
+                if (psd->icc_index[env][b] < 0) {
+                    psd->icc_index[env][b] = 0;
+                }
+                if (psd->icc_index[env][b] > 7) {
+                    psd->icc_index[env][b] = 7;
+                }
             }
         }
         for (b = 0; b < num_subbands; b++) {
@@ -185,12 +192,11 @@ int DecodePSDataPayload(BitStreamInfo *bsi, PSData *psd)
 }
 
 /**************************************************************************************
- * Function:    ProcessPSSlot
- *
- * Description: Apply fixed-point PS mixing matrix & allpass decorrelator to slot l
+    Function:    ProcessPSSlot
+
+    Description: Apply fixed-point PS mixing matrix & allpass decorrelator to slot l
  **************************************************************************************/
-void ProcessPSSlot(PSData *psd, int Xbuf_slot[64][2], int slot_L[64][2], int slot_R[64][2], int l)
-{
+void ProcessPSSlot(PSData *psd, int Xbuf_slot[64][2], int slot_L[64][2], int slot_R[64][2], int l) {
     int k, env;
     PSHeader *hdr = &psd->hdr;
 
