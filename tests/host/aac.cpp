@@ -12,8 +12,8 @@ struct TestCase {
 static bool RunDecodeTest(const TestCase &tc) {
     AudioFileSourceSTDIO in(tc.infile);
     if (!in.isOpen()) {
-        /* Skip test gracefully if optional sample file is not present */
-        return true;
+        printf("ERROR: Could not open test sample file: %s\n", tc.infile);
+        return false;
     }
 
     AudioOutputSTDIO out;
@@ -59,8 +59,8 @@ int main(int argc, char **argv)
 
     const TestCase test_suite[] = {
         {"AAC-LC Default Sample", "../../examples/PlayAACFromPROGMEM/homer-lc.aac", "out_lc.wav"},
-        {"HE-AAC v1 SBR Sample",  "homer_he_v1.aac",                              "out_he_v1.wav"},
-        {"HE-AAC v2 PS Sample",   "homer_he_v2.aac",                              "out_he_v2.wav"},
+        {"HE-AAC v1 SBR Sample",  "../../examples/PlayAACFromPROGMEM/homer-he-v1.aac", "out_he_v1.wav"},
+        {"HE-AAC v2 PS Sample",   "../../examples/PlayAACFromPROGMEM/homer-he-v2.aac", "out_he_v2.wav"},
     };
 
     bool all_passed = true;
