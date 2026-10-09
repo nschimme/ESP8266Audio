@@ -389,16 +389,16 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
                 int slot_L[64][2];
                 int slot_R[64][2];
 
-                for (l = 0; l < 16; l++) {
-                    ProcessPSSlot(&psi->psData, psi->XBuf[l * 2 + HF_ADJ], slot_L, slot_R, l * 2);
+                for (l = 0; l < 32; l++) {
+                    ProcessPSSlot(&psi->psData, psi->XBuf[l + HF_ADJ], slot_L, slot_R, l);
 
                     /* Synthesize Left channel QMF for slot l */
-                    QMFSynthesis(slot_L[0], psi->delayQMFS[0], &(psi->delayIdxQMFS[0]), qmfsBands, outL, 2);
-                    outL += 64 * 2;
+                    QMFSynthesis32(slot_L[0], psi->delayQMFS[0], &(psi->delayIdxQMFS[0]), qmfsBands, outL, 2);
+                    outL += 32 * 2;
 
                     /* Synthesize Right channel QMF for slot l */
-                    QMFSynthesis(slot_R[0], psi->delayQMFS[1], &(psi->delayIdxQMFS[1]), qmfsBands, outR, 2);
-                    outR += 64 * 2;
+                    QMFSynthesis32(slot_R[0], psi->delayQMFS[1], &(psi->delayIdxQMFS[1]), qmfsBands, outR, 2);
+                    outR += 32 * 2;
                 }
                 break;
 #else
@@ -427,9 +427,9 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
             /* step 4 - synthesis QMF */
 #if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
             qmfsBands = 32;
-            for (l = 0; l < 16; l++) {
-                QMFSynthesis(psi->XBuf[l * 2 + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
-                outptr += 64 * aacDecInfo->nChans;
+            for (l = 0; l < 32; l++) {
+                QMFSynthesis32(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
+                outptr += 32 * aacDecInfo->nChans;
             }
 #else
             qmfsBands = sbrFreq->kStartPrev + sbrFreq->numQMFBandsPrev;

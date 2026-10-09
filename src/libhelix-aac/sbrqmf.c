@@ -510,6 +510,80 @@ void QMFSynthesisConv(int *cPtr, int *delay, int dIdx, short *outbuf, int nChans
     Notes:       assumes MIN_GBITS_IN_QMFS guard bits in input, either from
                   QMFAnalysis (if upsampling only) or from MapHF (if SBR on)
  **************************************************************************************/
+#if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
+static void QMFSynthesis32Conv(int *cPtr, int *delay, int dIdx, short *outbuf, int nChans) {
+    int k, dOff0, dOff1;
+    U64 sum64;
+
+    dOff0 = dIdx * 64;
+    dOff1 = dOff0 - 1;
+    if (dOff1 < 0) {
+        dOff1 += 640;
+    }
+
+    for (k = 0; k <= 31; k++) {
+        sum64.w64 = 0;
+        sum64.w64 = MADD64(sum64.w64, cPtr[0], delay[dOff0]); dOff0 -= 128; if (dOff0 < 0) dOff0 += 640;
+        sum64.w64 = MADD64(sum64.w64, cPtr[1], delay[dOff1]); dOff1 -= 128; if (dOff1 < 0) dOff1 += 640;
+        sum64.w64 = MADD64(sum64.w64, cPtr[2], delay[dOff0]); dOff0 -= 128; if (dOff0 < 0) dOff0 += 640;
+        sum64.w64 = MADD64(sum64.w64, cPtr[3], delay[dOff1]); dOff1 -= 128; if (dOff1 < 0) dOff1 += 640;
+        sum64.w64 = MADD64(sum64.w64, cPtr[4], delay[dOff0]); dOff0 -= 128; if (dOff0 < 0) dOff0 += 640;
+        sum64.w64 = MADD64(sum64.w64, cPtr[5], delay[dOff1]); dOff1 -= 128; if (dOff1 < 0) dOff1 += 640;
+        sum64.w64 = MADD64(sum64.w64, cPtr[6], delay[dOff0]); dOff0 -= 128; if (dOff0 < 0) dOff0 += 640;
+        sum64.w64 = MADD64(sum64.w64, cPtr[7], delay[dOff1]); dOff1 -= 128; if (dOff1 < 0) dOff1 += 640;
+        sum64.w64 = MADD64(sum64.w64, cPtr[8], delay[dOff0]); dOff0 -= 128; if (dOff0 < 0) dOff0 += 640;
+        sum64.w64 = MADD64(sum64.w64, cPtr[9], delay[dOff1]); dOff1 -= 128; if (dOff1 < 0) dOff1 += 640;
+        cPtr += 20;
+
+        dOff0++;
+        dOff1--;
+        *outbuf = CLIPTOSHORT((sum64.r.hi32 + RND_VAL) >> FBITS_OUT_QMFS);
+        outbuf += nChans;
+    }
+}
+
+void QMFSynthesis32(int *inbuf, int *delay, int *delayIdx, int qmfsBands, short *outbuf, int nChans) {
+    int n, a0, a1, b0, b1, dOff0, dOff1, dIdx;
+    int *tBufLo, *tBufHi;
+
+    dIdx = *delayIdx;
+    tBufLo = delay + dIdx * 64 + 0;
+    tBufHi = delay + dIdx * 64 + 63;
+
+    for (n = 0; n < ((qmfsBands > 32 ? 32 : qmfsBands) >> 1); n++) {
+        a0 = *inbuf++; b0 = *inbuf++;
+        a1 = *inbuf++; b1 = *inbuf++;
+        *tBufLo++ = a0; *tBufLo++ = a1;
+        *tBufHi-- = b0; *tBufHi-- = b1;
+    }
+    for (; n < 16; n++) {
+        *tBufLo++ = 0; *tBufHi-- = 0;
+        *tBufLo++ = 0; *tBufHi-- = 0;
+    }
+
+    tBufLo = delay + dIdx * 64 + 0;
+    tBufHi = delay + dIdx * 64 + 32;
+
+    PreMultiply64(tBufLo);
+    FFT32C(tBufLo);
+    PostMultiply64(tBufLo, 32);
+
+    dOff0 = dIdx * 64;
+    dOff1 = dIdx * 64 + 32;
+    for (n = 16; n != 0; n--) {
+        a0 = (*tBufLo++); a1 = (*tBufLo++);
+        b0 = (*tBufHi++); b1 = -(*tBufHi++);
+        delay[dOff0++] = (b0 - a0);
+        delay[dOff0++] = (b1 - a1);
+        delay[dOff1++] = (b0 + a0);
+        delay[dOff1++] = (b1 + a1);
+    }
+
+    QMFSynthesis32Conv((int *)cTabS, delay, dIdx, outbuf, nChans);
+    *delayIdx = (*delayIdx == NUM_QMF_DELAY_BUFS - 1 ? 0 : *delayIdx + 1);
+}
+#endif
+
 void QMFSynthesis(int *inbuf, int *delay, int *delayIdx, int qmfsBands, short *outbuf, int nChans) {
     int n, a0, a1, b0, b1, dOff0, dOff1, dIdx;
     int *tBufLo, *tBufHi;

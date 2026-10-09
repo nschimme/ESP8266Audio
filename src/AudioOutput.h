@@ -26,7 +26,11 @@
 
 class AudioOutput {
 public:
-    AudioOutput() { };
+    AudioOutput() {
+        channels = 2;
+        hertz = 44100;
+        gainF2P6 = 1 << 6;
+    }
     virtual ~AudioOutput() {};
     virtual bool SetRate(int hz) {
         hertz = hz;
