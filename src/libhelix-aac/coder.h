@@ -154,11 +154,14 @@
 #define twidTabEven                                     STATNAME(twidTabEven)
 #define twidTabOdd                                      STATNAME(twidTabOdd)
 
+#ifndef _HUFFINFO_DEFINED
+#define _HUFFINFO_DEFINED
 typedef struct _HuffInfo {
     int maxBits;                                                    /* number of bits in longest codeword */
     unsigned /*char*/ int count[MAX_HUFF_BITS];         /* count[i] = number of codes with length i+1 bits */
     int offset;                                                             /* offset into symbol table */
 } HuffInfo;
+#endif
 
 typedef struct _PulseInfo {
     unsigned char pulseDataPresent;

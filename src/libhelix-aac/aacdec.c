@@ -44,6 +44,7 @@
  **************************************************************************************/
 
 #include "aaccommon.h"
+#include "coder.h"
 #include "sbr.h"
 
 //#include "profile.h"
@@ -180,10 +181,16 @@ void AACGetLastFrameInfo(HAACDecoder hAACDecoder, AACFrameInfo *aacFrameInfo) {
         aacFrameInfo->pnsUsed =       0;
     } else {
         int nChans = aacDecInfo->nChans;
+#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+        if (nChans > 1) {
+            nChans = 1;
+        }
+#else
 #if defined(AAC_ENABLE_SBR) && defined(AAC_ENABLE_PS)
         if (aacDecInfo->psInfoSBR && ((PSInfoSBR *)aacDecInfo->psInfoSBR)->psUsed) {
             nChans = 2;
         }
+#endif
 #endif
         aacFrameInfo->bitRate =       aacDecInfo->bitRate;
         aacFrameInfo->nChans =        nChans;
@@ -430,6 +437,19 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
         }
         PROFILE_END();
 
+#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+        if (aacDecInfo->currBlockID == AAC_ID_CPE) {
+            PSInfoBase *psi_base = (PSInfoBase *)(aacDecInfo->psInfoBase);
+            int *coefL = psi_base->coef[0];
+            int *coefR = psi_base->coef[1];
+            int i;
+            for (i = 0; i < 1024; i++) {
+                coefL[i] = (coefL[i] + coefR[i]) >> 1;
+            }
+            elementChans = 1;
+        }
+#endif
+
 
         /* PNS, TNS, inverse transform */
         for (ch = 0; ch < elementChans; ch++) {
@@ -465,7 +485,11 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
             if (aacDecInfo->currBlockID == AAC_ID_LFE) {
                 elementChansSBR = elementNumChans[AAC_ID_LFE];
             } else if (aacDecInfo->currBlockID == AAC_ID_FIL && (aacDecInfo->prevBlockID == AAC_ID_SCE || aacDecInfo->prevBlockID == AAC_ID_CPE)) {
+#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+                elementChansSBR = 1;
+#else
                 elementChansSBR = elementNumChans[aacDecInfo->prevBlockID];
+#endif
             } else {
                 elementChansSBR = 0;
             }

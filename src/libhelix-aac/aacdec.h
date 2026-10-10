@@ -104,6 +104,10 @@ extern "C" {
 /* define these to enable decoder features */
 #define AAC_ENABLE_MPEG4
 
+#ifndef AAC_ENABLE_MONO_DOWNMIX
+#define AAC_ENABLE_MONO_DOWNMIX 0
+#endif
+
 enum {
     ERR_AAC_NONE                          =   0,
     ERR_AAC_INDATA_UNDERFLOW              =  -1,

@@ -556,9 +556,15 @@ int IMDCT(AACDecInfo *aacDecInfo, int ch, int chOut, short *outbuf) {
     }
 
     if (!aacDecInfo->sbrEnabled) {
+        int nChansOut = aacDecInfo->nChans;
+#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+        if (nChansOut > 1) {
+            nChansOut = 1;
+        }
+#endif
         for (i = 0; i < AAC_MAX_NSAMPS; i++) {
             *outbuf = CLIPTOSHORT((psi->sbrWorkBuf[ch][i] + RND_VAL) >> FBITS_OUT_IMDCT);
-            outbuf += aacDecInfo->nChans;
+            outbuf += nChansOut;
         }
     }
 

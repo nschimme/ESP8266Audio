@@ -557,7 +557,7 @@ void UnpackSBRSingleChannel(BitStreamInfo *bsi, PSInfoSBR *psi, int chBase) {
         while (bitsLeft > 0) {
             int ext_id = GetBits(bsi, 2);
             bitsLeft -= 2;
-#if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
+#if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS && (!defined(AAC_ENABLE_MONO_DOWNMIX) || !AAC_ENABLE_MONO_DOWNMIX)
             if (ext_id == EXT_PS) {
                 psi->psUsed = 1;
                 DecodePSHeader(bsi, &psi->psData.hdr);

@@ -180,6 +180,8 @@ enum {
     HuffTabSBR_fNoise30b = 7
 };
 
+#ifndef _HUFFINFO_DEFINED
+#define _HUFFINFO_DEFINED
 typedef struct _HuffInfo {
     int maxBits;							/* number of bits in longest codeword */
 #ifdef ESP8266
@@ -189,6 +191,7 @@ typedef struct _HuffInfo {
 #endif
     int offset;								/* offset into symbol table */
 } HuffInfo;
+#endif
 
 /* need one SBRHeader per element (SCE/CPE), updated only on new header */
 typedef struct _SBRHeader {

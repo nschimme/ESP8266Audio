@@ -297,7 +297,11 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
         if (aacDecInfo->prevBlockID == AAC_ID_SCE) {
             chBlock = 1;
         } else if (aacDecInfo->prevBlockID == AAC_ID_CPE) {
+#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+            chBlock = 1;
+#else
             chBlock = 2;
+#endif
         } else {
             return ERR_AAC_NONE;
         }
@@ -344,17 +348,24 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
             sbrChan->gbMask[gbIdx] |= gbMask;	/* gbIdx = (0 if i < 32), (1 if i >= 32) */
         }
 
+        int nChansOut = aacDecInfo->nChans;
+#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+        if (nChansOut > 1) {
+            nChansOut = 1;
+        }
+#endif
+
         if (upsampleOnly) {
             /* no SBR - just run synthesis QMF to upsample by 2x */
             qmfsBands = 32;
             for (l = 0; l < 32; l++) {
                 /* step 4 - synthesis QMF */
 #if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
-                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
-                outptr += 32 * aacDecInfo->nChans;
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, nChansOut);
+                outptr += 32 * nChansOut;
 #else
-                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
-                outptr += 64 * aacDecInfo->nChans;
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, nChansOut);
+                outptr += 64 * nChansOut;
 #endif
             }
         } else {
@@ -433,23 +444,23 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
 #if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
             qmfsBands = 32;
             for (l = 0; l < 32; l++) {
-                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
-                outptr += 32 * aacDecInfo->nChans;
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, nChansOut);
+                outptr += 32 * nChansOut;
             }
 #else
             qmfsBands = sbrFreq->kStartPrev + sbrFreq->numQMFBandsPrev;
             for (l = 0; l < sbrGrid->envTimeBorder[0]; l++) {
                 /* if new envelope starts mid-frame, use old settings until start of first envelope in this frame */
-                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
-                outptr += 64 * aacDecInfo->nChans;
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, nChansOut);
+                outptr += 64 * nChansOut;
             }
 #endif
 
             qmfsBands = sbrFreq->kStart + sbrFreq->numQMFBands;
             for (; l < 32; l++) {
                 /* use new settings for rest of frame (usually the entire frame, unless the first envelope starts mid-frame) */
-                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
-                outptr += 64 * aacDecInfo->nChans;
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, nChansOut);
+                outptr += 64 * nChansOut;
             }
         }
 
