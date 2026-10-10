@@ -104,10 +104,16 @@ extern "C" {
 /* define these to enable decoder features */
 #define AAC_ENABLE_MPEG4
 
-/* Downmix options: 0 = disabled, 1 = mono downmix, 2 = stereo downmix */
+/* Downmix options:
+ * 0 = disabled (native channel configuration)
+ * 1 = mono downmix (spectral pre-IMDCT L+R -> 1.0 mono, PS bypassed)
+ * 2 = stereo downmix (2.0 stereo output for multi-channel/matrix mixdown)
+ */
 #ifndef AAC_ENABLE_DOWNMIX
 #  if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
 #    define AAC_ENABLE_DOWNMIX 1
+#  elif defined(AAC_ENABLE_STEREO_DOWNMIX) && AAC_ENABLE_STEREO_DOWNMIX
+#    define AAC_ENABLE_DOWNMIX 2
 #  else
 #    define AAC_ENABLE_DOWNMIX 0
 #  endif
@@ -118,6 +124,12 @@ extern "C" {
 #  define AAC_ENABLE_MONO_DOWNMIX 1
 #  undef AAC_ENABLE_PS
 #  define AAC_ENABLE_PS 0
+#elif AAC_ENABLE_DOWNMIX == 2
+#  undef AAC_ENABLE_STEREO_DOWNMIX
+#  define AAC_ENABLE_STEREO_DOWNMIX 1
+#  ifndef AAC_ENABLE_PS
+#    define AAC_ENABLE_PS 1
+#  endif
 #endif
 
 enum {

@@ -181,9 +181,13 @@ void AACGetLastFrameInfo(HAACDecoder hAACDecoder, AACFrameInfo *aacFrameInfo) {
         aacFrameInfo->pnsUsed =       0;
     } else {
         int nChans = aacDecInfo->nChans;
-#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+#if defined(AAC_ENABLE_DOWNMIX) && AAC_ENABLE_DOWNMIX == 1
         if (nChans > 1) {
             nChans = 1;
+        }
+#elif defined(AAC_ENABLE_DOWNMIX) && AAC_ENABLE_DOWNMIX == 2
+        if (nChans > 2) {
+            nChans = 2;
         }
 #else
 #if defined(AAC_ENABLE_SBR) && defined(AAC_ENABLE_PS)
