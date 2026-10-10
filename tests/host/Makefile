@@ -68,13 +68,6 @@ aac_mono: FORCE
 	rm -f *.o
 	echo valgrind --leak-check=full --track-origins=yes -v --error-limit=no --show-leak-kinds=all ./aac_mono
 
-aac_stereo_downmix: FORCE
-	rm -f *.o
-	gcc $(CCOPTS) -DUSE_DEFAULT_STDLIB -DAAC_ENABLE_DOWNMIX=2 -c $(libhelix_aac) -I ../../src/ -I.
-	g++ $(CPPOPTS) -DAAC_ENABLE_DOWNMIX=2 -o aac_stereo_downmix aac.cpp Serial.cpp *.o ../../src/AudioFileSourceSTDIO.cpp ../../src/AudioOutputSTDIO.cpp ../../src/AudioFileSourceID3.cpp ../../src/AudioGeneratorAAC.cpp  ../../src/AudioLogger.cpp -I ../../src/ -I.
-	rm -f *.o
-	echo valgrind --leak-check=full --track-origins=yes -v --error-limit=no --show-leak-kinds=all ./aac_stereo_downmix
-
 flac: FORCE
 	rm -f *.o
 	gcc $(CCOPTS) -DUSE_DEFAULT_STDLIB -c $(libflac) -I ../../src/ -I ../../src/libflac -I.
@@ -108,6 +101,6 @@ opus: FORCE
 	echo valgrind --leak-check=full --track-origins=yes -v --error-limit=no --show-leak-kinds=all ./opus
 
 clean:
-	rm -f mp3 aac aac_mono aac_stereo_downmix wav midi opus flac mod id3 *.o
+	rm -f mp3 aac aac_mono wav midi opus flac mod id3 *.o
 
 FORCE:
