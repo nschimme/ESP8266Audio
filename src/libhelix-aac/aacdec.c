@@ -439,19 +439,25 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
 
 #if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
         if (aacDecInfo->currBlockID == AAC_ID_CPE) {
-            PSInfoBase *psi_base = (PSInfoBase *)(aacDecInfo->psInfoBase);
-            ICSInfo *icsInfoL = &(psi_base->icsInfo[0]);
-            ICSInfo *icsInfoR = &(psi_base->icsInfo[1]);
+            /* Only perform pre-IMDCT spectral downmixing when SBR is disabled.
+             * When SBR is enabled, both core channels are decoded to provide inputs for SBR QMF analysis,
+             * and downmixing is performed in the QMF subband domain pre-synthesis.
+             */
+            if (!aacDecInfo->sbrEnabled) {
+                PSInfoBase *psi_base = (PSInfoBase *)(aacDecInfo->psInfoBase);
+                ICSInfo *icsInfoL = &(psi_base->icsInfo[0]);
+                ICSInfo *icsInfoR = &(psi_base->icsInfo[1]);
 
-            /* Downmix pre-IMDCT in spectral domain if window sequence and window shape match */
-            if (icsInfoL->winSequence == icsInfoR->winSequence && icsInfoL->winShape == icsInfoR->winShape) {
-                int *coefL = psi_base->coef[0];
-                int *coefR = psi_base->coef[1];
-                int i;
-                for (i = 0; i < 1024; i++) {
-                    coefL[i] = (coefL[i] + coefR[i]) >> 1;
+                /* Downmix pre-IMDCT in spectral domain if window sequence and window shape match */
+                if (icsInfoL->winSequence == icsInfoR->winSequence && icsInfoL->winShape == icsInfoR->winShape) {
+                    int *coefL = psi_base->coef[0];
+                    int *coefR = psi_base->coef[1];
+                    int i;
+                    for (i = 0; i < 1024; i++) {
+                        coefL[i] = (coefL[i] + coefR[i]) >> 1;
+                    }
+                    elementChans = 1;
                 }
-                elementChans = 1;
             }
         }
 #endif
@@ -502,11 +508,7 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
             if (aacDecInfo->currBlockID == AAC_ID_LFE) {
                 elementChansSBR = elementNumChans[AAC_ID_LFE];
             } else if (aacDecInfo->currBlockID == AAC_ID_FIL && (aacDecInfo->prevBlockID == AAC_ID_SCE || aacDecInfo->prevBlockID == AAC_ID_CPE)) {
-#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
-                elementChansSBR = 1;
-#else
                 elementChansSBR = elementNumChans[aacDecInfo->prevBlockID];
-#endif
             } else {
                 elementChansSBR = 0;
             }

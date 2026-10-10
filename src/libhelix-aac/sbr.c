@@ -297,11 +297,7 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
         if (aacDecInfo->prevBlockID == AAC_ID_SCE) {
             chBlock = 1;
         } else if (aacDecInfo->prevBlockID == AAC_ID_CPE) {
-#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
-            chBlock = 1;
-#else
             chBlock = 2;
-#endif
         } else {
             return ERR_AAC_NONE;
         }
@@ -394,6 +390,43 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
 
             /* step 3 - HF adjustment */
             AdjustHighFreq(psi, sbrHdr, sbrGrid, sbrFreq, sbrChan, ch);
+
+#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+            static int XBufL[32 + HF_ADJ][64][2];
+            if (chBlock == 2) {
+                if (ch == 0) {
+                    /* Save Left channel QMF subbands */
+                    for (l = 0; l < 32 + HF_ADJ; l++) {
+                        for (k = 0; k < 64; k++) {
+                            XBufL[l][k][0] = psi->XBuf[l][k][0];
+                            XBufL[l][k][1] = psi->XBuf[l][k][1];
+                        }
+                    }
+                    /* Save delay for ch = 0 and skip synthesis */
+                    for (l = 0; l < HF_GEN; l++) {
+                        for (k = 0; k < 64; k++) {
+                            psi->XBufDelay[chBase + ch][l][k][0] = psi->XBuf[l + 32][k][0];
+                            psi->XBufDelay[chBase + ch][l][k][1] = psi->XBuf[l + 32][k][1];
+                        }
+                    }
+                    sbrChan->gbMask[0] = sbrChan->gbMask[1];
+                    sbrChan->gbMask[1] = 0;
+                    if (sbrHdr->count > 0) {
+                        sbrChan->reset = 0;
+                    }
+                    continue;
+                } else if (ch == 1) {
+                    /* Average Left (XBufL) and Right (psi->XBuf) QMF subbands */
+                    for (l = 0; l < 32 + HF_ADJ; l++) {
+                        for (k = 0; k < 64; k++) {
+                            psi->XBuf[l][k][0] = (XBufL[l][k][0] + psi->XBuf[l][k][0]) >> 1;
+                            psi->XBuf[l][k][1] = (XBufL[l][k][1] + psi->XBuf[l][k][1]) >> 1;
+                        }
+                    }
+                    outptr = outbuf;
+                }
+            }
+#endif
 
 #if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
             if (psi->psUsed && chBlock == 1) {
