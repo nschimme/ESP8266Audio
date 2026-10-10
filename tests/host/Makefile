@@ -37,7 +37,7 @@ CPPOPTS=-g -Wunused-parameter -Wall -std=c++11  -Wstack-usage=300 -include Ardui
 
 .phony: all
 
-all: mp3 aac aac_mono wav midi opus flac mod id3
+all: mp3 aac aac_downsample aac_mono wav midi opus flac mod id3
 
 # Native build. Parses only the ID3 filter against synthetic files.
 id3: FORCE
@@ -60,6 +60,13 @@ aac: FORCE
 	g++ $(CPPOPTS) -o aac aac.cpp Serial.cpp *.o ../../src/AudioFileSourceSTDIO.cpp ../../src/AudioOutputSTDIO.cpp ../../src/AudioFileSourceID3.cpp ../../src/AudioGeneratorAAC.cpp  ../../src/AudioLogger.cpp -I ../../src/ -I.
 	rm -f *.o
 	echo valgrind --leak-check=full --track-origins=yes -v --error-limit=no --show-leak-kinds=all ./aac
+
+aac_downsample: FORCE
+	rm -f *.o
+	gcc $(CCOPTS) -DUSE_DEFAULT_STDLIB -DAAC_ENABLE_SBR_DOWNSAMPLED=1 -c $(libhelix_aac) -I ../../src/ -I.
+	g++ $(CPPOPTS) -DAAC_ENABLE_SBR_DOWNSAMPLED=1 -o aac_downsample aac.cpp Serial.cpp *.o ../../src/AudioFileSourceSTDIO.cpp ../../src/AudioOutputSTDIO.cpp ../../src/AudioFileSourceID3.cpp ../../src/AudioGeneratorAAC.cpp  ../../src/AudioLogger.cpp -I ../../src/ -I.
+	rm -f *.o
+	echo valgrind --leak-check=full --track-origins=yes -v --error-limit=no --show-leak-kinds=all ./aac_downsample
 
 aac_mono: FORCE
 	rm -f *.o
@@ -101,6 +108,6 @@ opus: FORCE
 	echo valgrind --leak-check=full --track-origins=yes -v --error-limit=no --show-leak-kinds=all ./opus
 
 clean:
-	rm -f mp3 aac aac_mono wav midi opus flac mod id3 *.o
+	rm -f mp3 aac aac_downsample aac_mono wav midi opus flac mod id3 *.o
 
 FORCE:

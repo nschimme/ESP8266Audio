@@ -1,5 +1,6 @@
 *.o
 aac
+aac_downsample
 aac_mono
 flac
 id3
