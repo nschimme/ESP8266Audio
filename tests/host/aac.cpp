@@ -98,9 +98,9 @@ int main(int argc, char **argv)
     }
 
     const TestCase test_suite[] = {
-        {"AAC-LC Default Sample", "examples/PlayAACFromPROGMEM/homer-lc.aac",    "out_lc.wav"},
-        {"HE-AAC v1 SBR Sample",  "examples/PlayAACFromPROGMEM/homer-he-v1.aac", "out_he_v1.wav"},
-        {"HE-AAC v2 PS Sample",   "examples/PlayAACFromPROGMEM/homer-he-v2.aac", "out_he_v2.wav"},
+        {"AAC-LC Default Sample", "examples/PlayAACFromPROGMEM/homer-lc.aac",  "out_lc.wav"},
+        {"HE-AAC v1 SBR Sample",  "examples/PlayAACFromPROGMEM/homer-sbr.aac", "out_sbr.wav"},
+        {"HE-AAC v2 PS Sample",   "examples/PlayAACFromPROGMEM/homer-ps.aac",  "out_ps.wav"},
     };
 
     bool all_passed = true;
