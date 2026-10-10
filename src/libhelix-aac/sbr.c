@@ -345,7 +345,7 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
         }
 
         int nChansOut = aacDecInfo->nChans;
-#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+#if AAC_MAX_NCHANS_OUT == 1
         if (nChansOut > 1) {
             nChansOut = 1;
         }
@@ -391,7 +391,7 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
             /* step 3 - HF adjustment */
             AdjustHighFreq(psi, sbrHdr, sbrGrid, sbrFreq, sbrChan, ch);
 
-#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+#if AAC_MAX_NCHANS_OUT == 1
             static int XBufL[32 + HF_ADJ][64][2];
             if (chBlock == 2) {
                 if (ch == 0) {

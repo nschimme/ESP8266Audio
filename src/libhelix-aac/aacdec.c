@@ -181,7 +181,7 @@ void AACGetLastFrameInfo(HAACDecoder hAACDecoder, AACFrameInfo *aacFrameInfo) {
         aacFrameInfo->pnsUsed =       0;
     } else {
         int nChans = aacDecInfo->nChans;
-#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+#if AAC_MAX_NCHANS_OUT == 1
         if (nChans > 1) {
             nChans = 1;
         }
@@ -437,7 +437,7 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
         }
         PROFILE_END();
 
-#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+#if AAC_MAX_NCHANS_OUT == 1
         if (aacDecInfo->currBlockID == AAC_ID_CPE) {
             /* Only perform pre-IMDCT spectral downmixing when SBR is disabled.
              * When SBR is enabled, both core channels are decoded to provide inputs for SBR QMF analysis,
@@ -492,7 +492,7 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
             PROFILE_END();
         }
 
-#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+#if AAC_MAX_NCHANS_OUT == 1
         if (aacDecInfo->currBlockID == AAC_ID_CPE && elementChans == 2) {
             /* Fallback post-IMDCT time-domain downmix when window sequences/shapes differ */
             int i;

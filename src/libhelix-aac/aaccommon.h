@@ -53,11 +53,11 @@
 #  define AAC_ENABLE_SBR 1
 #endif
 
-#ifndef AAC_ENABLE_MONO_DOWNMIX
-#  define AAC_ENABLE_MONO_DOWNMIX 0
+#ifndef AAC_MAX_NCHANS_OUT
+#  define AAC_MAX_NCHANS_OUT 2
 #endif
 
-#if AAC_ENABLE_MONO_DOWNMIX
+#if AAC_MAX_NCHANS_OUT == 1
 #  undef AAC_ENABLE_PS
 #  define AAC_ENABLE_PS 0
 #else

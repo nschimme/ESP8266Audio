@@ -63,8 +63,8 @@ aac: FORCE
 
 aac_mono: FORCE
 	rm -f *.o
-	gcc $(CCOPTS) -DUSE_DEFAULT_STDLIB -DAAC_ENABLE_MONO_DOWNMIX=1 -c $(libhelix_aac) -I ../../src/ -I.
-	g++ $(CPPOPTS) -DAAC_ENABLE_MONO_DOWNMIX=1 -o aac_mono aac.cpp Serial.cpp *.o ../../src/AudioFileSourceSTDIO.cpp ../../src/AudioOutputSTDIO.cpp ../../src/AudioFileSourceID3.cpp ../../src/AudioGeneratorAAC.cpp  ../../src/AudioLogger.cpp -I ../../src/ -I.
+	gcc $(CCOPTS) -DUSE_DEFAULT_STDLIB -DAAC_MAX_NCHANS_OUT=1 -c $(libhelix_aac) -I ../../src/ -I.
+	g++ $(CPPOPTS) -DAAC_MAX_NCHANS_OUT=1 -o aac_mono aac.cpp Serial.cpp *.o ../../src/AudioFileSourceSTDIO.cpp ../../src/AudioOutputSTDIO.cpp ../../src/AudioFileSourceID3.cpp ../../src/AudioGeneratorAAC.cpp  ../../src/AudioLogger.cpp -I ../../src/ -I.
 	rm -f *.o
 	echo valgrind --leak-check=full --track-origins=yes -v --error-limit=no --show-leak-kinds=all ./aac_mono
 
