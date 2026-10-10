@@ -440,13 +440,19 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
 #if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
         if (aacDecInfo->currBlockID == AAC_ID_CPE) {
             PSInfoBase *psi_base = (PSInfoBase *)(aacDecInfo->psInfoBase);
-            int *coefL = psi_base->coef[0];
-            int *coefR = psi_base->coef[1];
-            int i;
-            for (i = 0; i < 1024; i++) {
-                coefL[i] = (coefL[i] + coefR[i]) >> 1;
+            ICSInfo *icsInfoL = &(psi_base->icsInfo[0]);
+            ICSInfo *icsInfoR = &(psi_base->icsInfo[1]);
+
+            /* Downmix pre-IMDCT in spectral domain if window sequence and window shape match */
+            if (icsInfoL->winSequence == icsInfoR->winSequence && icsInfoL->winShape == icsInfoR->winShape) {
+                int *coefL = psi_base->coef[0];
+                int *coefR = psi_base->coef[1];
+                int i;
+                for (i = 0; i < 1024; i++) {
+                    coefL[i] = (coefL[i] + coefR[i]) >> 1;
+                }
+                elementChans = 1;
             }
-            elementChans = 1;
         }
 #endif
 
@@ -479,6 +485,17 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
             }
             PROFILE_END();
         }
+
+#if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+        if (aacDecInfo->currBlockID == AAC_ID_CPE && elementChans == 2) {
+            /* Fallback post-IMDCT time-domain downmix when window sequences/shapes differ */
+            int i;
+            int numSamps = aacDecInfo->sbrEnabled ? 2048 : 1024;
+            for (i = 0; i < numSamps; i++) {
+                outbuf[i] = (outbuf[i * 2 + 0] + outbuf[i * 2 + 1]) >> 1;
+            }
+        }
+#endif
 
 #ifdef AAC_ENABLE_SBR
         if (aacDecInfo->sbrEnabled && (aacDecInfo->currBlockID == AAC_ID_FIL || aacDecInfo->currBlockID == AAC_ID_LFE)) {
