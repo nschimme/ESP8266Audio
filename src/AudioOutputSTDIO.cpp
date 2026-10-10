@@ -73,7 +73,7 @@ bool AudioOutputSTDIO::ConsumeSample(int16_t sample[2]) {
 
 bool AudioOutputSTDIO::stop() {
     uint8_t wavHeader[sizeof(wavHeaderTemplate)];
-
+    memset(wavHeader, 0, sizeof(wavHeader));
     memcpy_P(wavHeader, wavHeaderTemplate, sizeof(wavHeaderTemplate));
 
     int chunksize = ftell(f) - 8;

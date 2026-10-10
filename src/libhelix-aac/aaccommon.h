@@ -53,8 +53,24 @@
 #  define AAC_ENABLE_SBR 1
 #endif
 
-#ifndef AAC_ENABLE_PS
-#  define AAC_ENABLE_PS 1
+/* Downmix options: 0 = disabled, 1 = mono downmix, 2 = stereo downmix */
+#ifndef AAC_ENABLE_DOWNMIX
+#  if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
+#    define AAC_ENABLE_DOWNMIX 1
+#  else
+#    define AAC_ENABLE_DOWNMIX 0
+#  endif
+#endif
+
+#if AAC_ENABLE_DOWNMIX == 1
+#  undef AAC_ENABLE_MONO_DOWNMIX
+#  define AAC_ENABLE_MONO_DOWNMIX 1
+#  undef AAC_ENABLE_PS
+#  define AAC_ENABLE_PS 0
+#else
+#  ifndef AAC_ENABLE_PS
+#    define AAC_ENABLE_PS 1
+#  endif
 #endif
 
 // On ESP8266: enable Downsampled SBR mode to save RAM
