@@ -250,3 +250,104 @@ int StereoProcess(AACDecInfo *aacDecInfo) {
 
     return 0;
 }
+
+/**************************************************************************************
+    Function:    AACDownmixPCM
+
+    Description: fixed-point adaptation of FAAD3 downmix_pcm
+
+    Inputs:      PCM buffer, number of channels, number of samples per channel, mode (1=mono, 2=stereo)
+
+    Outputs:     downmixed PCM in pcm buffer
+
+    Return:      number of output channels (1 for mono, 2 for stereo)
+ **************************************************************************************/
+int AACDownmixPCM(short *pcm, int num_chs, int num_samps_per_ch, int mode) {
+    int i, c = -1, ls = -1, rs = -1;
+    int gain_q30, k_q30, lsw_q30;
+    int lo, ro;
+
+    if (mode == 0 || num_chs < 2 || (mode == 2 && num_chs == 2)) {
+        return num_chs;
+    }
+
+    switch (num_chs) {
+    case 3: c = 2; break;
+    case 4: c = 2; ls = 3; rs = 3; break;
+    case 5: c = 2; ls = 3; rs = 4; break;
+    case 6: c = 2; ls = 4; rs = 5; break; /* 5.1: L(0), R(1), C(2), LFE(3), LS(4), RS(5) */
+    case 8: c = 2; ls = 4; rs = 5; break; /* 7.1 */
+    default: break;
+    }
+
+    k_q30 = 0x5a82799a; /* 0.70710678 in Q30 */
+
+    /* Precalculated Q30 gains to prevent overflow clipping */
+    switch (num_chs) {
+    case 3:  gain_q30 = 0x257a7802; break; /* 1 / (1 + k) = 0.585786 */
+    case 4:  gain_q30 = 0x1f0f1880; break; /* 1 / (1 + 1.5*k) = 0.485281 */
+    case 5:
+    case 6:  gain_q30 = 0x1a82799a; break; /* 1 / (1 + 2*k) = 0.414214 */
+    case 8:  gain_q30 = 0x1480f2d4; break; /* 1 / (1 + 3*k) = 0.320377 */
+    default: gain_q30 = 0x40000000; break; /* 1.0 in Q30 */
+    }
+
+    lsw_q30 = (ls >= 0 && ls == rs) ? (k_q30 >> 1) : k_q30;
+
+    if (mode == 1) { /* Mono downmix */
+        for (i = 0; i < num_samps_per_ch; i++) {
+            lo = pcm[i * num_chs + 0];
+            ro = pcm[i * num_chs + 1];
+
+            if (c >= 0) {
+                int c_val = pcm[i * num_chs + c];
+                lo += MULSHIFT32(c_val << 2, k_q30);
+                ro += MULSHIFT32(c_val << 2, k_q30);
+            }
+            if (ls >= 0) {
+                lo += MULSHIFT32(pcm[i * num_chs + ls] << 2, lsw_q30);
+                ro += MULSHIFT32(pcm[i * num_chs + rs] << 2, lsw_q30);
+            }
+            if (num_chs == 8) {
+                lo += MULSHIFT32(pcm[i * num_chs + 6] << 2, k_q30);
+                ro += MULSHIFT32(pcm[i * num_chs + 7] << 2, k_q30);
+            }
+
+            if (num_chs > 2) {
+                lo = MULSHIFT32(lo << 2, gain_q30);
+                ro = MULSHIFT32(ro << 2, gain_q30);
+            }
+
+            pcm[i] = CLIPTOSHORT((lo + ro) >> 1);
+        }
+        return 1;
+    } else { /* Stereo downmix */
+        for (i = 0; i < num_samps_per_ch; i++) {
+            lo = pcm[i * num_chs + 0];
+            ro = pcm[i * num_chs + 1];
+
+            if (c >= 0) {
+                int c_val = pcm[i * num_chs + c];
+                lo += MULSHIFT32(c_val << 2, k_q30);
+                ro += MULSHIFT32(c_val << 2, k_q30);
+            }
+            if (ls >= 0) {
+                lo += MULSHIFT32(pcm[i * num_chs + ls] << 2, lsw_q30);
+                ro += MULSHIFT32(pcm[i * num_chs + rs] << 2, lsw_q30);
+            }
+            if (num_chs == 8) {
+                lo += MULSHIFT32(pcm[i * num_chs + 6] << 2, k_q30);
+                ro += MULSHIFT32(pcm[i * num_chs + 7] << 2, k_q30);
+            }
+
+            if (num_chs > 2) {
+                lo = MULSHIFT32(lo << 2, gain_q30);
+                ro = MULSHIFT32(ro << 2, gain_q30);
+            }
+
+            pcm[i * 2 + 0] = CLIPTOSHORT(lo);
+            pcm[i * 2 + 1] = CLIPTOSHORT(ro);
+        }
+        return 2;
+    }
+}

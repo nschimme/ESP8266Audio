@@ -77,6 +77,7 @@
 #define DecodeNoiselessData		STATNAME(DecodeNoiselessData)
 #define Dequantize				STATNAME(Dequantize)
 #define StereoProcess			STATNAME(StereoProcess)
+#define AACDownmixPCM			STATNAME(AACDownmixPCM)
 #define DeinterleaveShortBlocks	STATNAME(DeinterleaveShortBlocks)
 #define PNS						STATNAME(PNS)
 #define TNSFilter				STATNAME(TNSFilter)

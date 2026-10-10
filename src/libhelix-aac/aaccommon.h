@@ -196,6 +196,7 @@ int DecodeNoiselessData(AACDecInfo *aacDecInfo, unsigned char **buf, int *bitOff
 
 int Dequantize(AACDecInfo *aacDecInfo, int ch);
 int StereoProcess(AACDecInfo *aacDecInfo);
+int AACDownmixPCM(short *pcm, int num_chs, int num_samps_per_ch, int mode);
 int DeinterleaveShortBlocks(AACDecInfo *aacDecInfo, int ch);
 int PNS(AACDecInfo *aacDecInfo, int ch);
 int TNSFilter(AACDecInfo *aacDecInfo, int ch);
