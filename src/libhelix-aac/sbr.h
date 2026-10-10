@@ -287,10 +287,10 @@ typedef struct _PSInfoSBR {
     int                   sampRateIdx;
 
     /* state info that must be saved for each channel */
-    SBRHeader             sbrHdr[AAC_MAX_NCHANS];
-    SBRGrid               sbrGrid[AAC_MAX_NCHANS];
-    SBRFreq               sbrFreq[AAC_MAX_NCHANS];
-    SBRChan               sbrChan[AAC_MAX_NCHANS];
+    SBRHeader             sbrHdr[AAC_MAX_NCHANS_OUT];
+    SBRGrid               sbrGrid[AAC_MAX_NCHANS_OUT];
+    SBRFreq               sbrFreq[AAC_MAX_NCHANS_OUT];
+    SBRChan               sbrChan[AAC_MAX_NCHANS_OUT];
 
     /* temp variables, no need to save between blocks */
     unsigned char         dataExtra;
@@ -337,11 +337,11 @@ typedef struct _PSInfoSBR {
     int                   qFiltLast[MAX_QMF_BANDS];
 
     /* large buffers */
-    int                   delayIdxQMFA[AAC_MAX_NCHANS];
-    int                   delayQMFA[AAC_MAX_NCHANS][DELAY_SAMPS_QMFA];
-    int                   delayIdxQMFS[AAC_MAX_NCHANS];
-    int                   delayQMFS[AAC_MAX_NCHANS][DELAY_SAMPS_QMFS];
-    int                   XBufDelay[AAC_MAX_NCHANS][HF_GEN][64][2];
+    int                   delayIdxQMFA[AAC_MAX_NCHANS_OUT];
+    int                   delayQMFA[AAC_MAX_NCHANS_OUT][DELAY_SAMPS_QMFA];
+    int                   delayIdxQMFS[AAC_MAX_NCHANS_OUT];
+    int                   delayQMFS[AAC_MAX_NCHANS_OUT][DELAY_SAMPS_QMFS];
+    int                   XBufDelay[AAC_MAX_NCHANS_OUT][HF_GEN][64][2];
     int                   XBuf[32 + 8][64][2];
 
 #if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
