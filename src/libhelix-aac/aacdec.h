@@ -91,7 +91,7 @@ extern "C" {
          0 bits =    0 bytes per CCE-D (uses bits from the SCE/CPE/CCE-I it is coupled to)
 */
 #ifndef AAC_MAX_NCHANS				/* if max channels isn't set in makefile, */
-#define AAC_MAX_NCHANS		8		/* set to max number of bitstream input channels  */
+#define AAC_MAX_NCHANS		2		/* set to default max number of channels  */
 #endif
 
 #if defined(AAC_ENABLE_MONO_DOWNMIX) && AAC_ENABLE_MONO_DOWNMIX
