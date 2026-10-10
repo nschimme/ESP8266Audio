@@ -80,7 +80,7 @@ bool AudioOutputSTDIO::stop() {
         return false;
     }
     uint8_t wavHeader[sizeof(wavHeaderTemplate)];
-
+    memset(wavHeader, 0, sizeof(wavHeader));
     memcpy_P(wavHeader, wavHeaderTemplate, sizeof(wavHeaderTemplate));
 
     int chunksize = ftell(f) - 8;
@@ -116,8 +116,8 @@ bool AudioOutputSTDIO::stop() {
     fseek(f, 0, SEEK_SET);
     fwrite(wavHeader, sizeof(wavHeader), 1, f);
     fclose(f);
+    f = NULL;
     return true;
 }
 
 #endif
-
