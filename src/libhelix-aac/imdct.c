@@ -528,6 +528,13 @@ int IMDCT(AACDecInfo *aacDecInfo, int ch, int chOut, short *outbuf) {
     }
     psi = (PSInfoBase *)(aacDecInfo->psInfoBase);
     icsInfo = (ch == 1 && psi->commonWin == 1) ? &(psi->icsInfo[0]) : &(psi->icsInfo[ch]);
+
+#if AAC_MAX_NCHANS_OUT < AAC_MAX_NCHANS
+    if (chOut >= AAC_MAX_NCHANS_OUT) {
+        chOut = AAC_MAX_NCHANS_OUT - 1;
+    }
+#endif
+
     outbuf += chOut;
 
     /* optimized type-IV DCT (operates inplace) */

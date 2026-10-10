@@ -1,5 +1,6 @@
 *.o
 aac
+aac_mono
 flac
 id3
 midi
@@ -8,3 +9,4 @@ mp3
 opus
 wav
 out*.wav
+*.wav

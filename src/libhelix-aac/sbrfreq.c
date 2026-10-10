@@ -44,6 +44,9 @@
  **************************************************************************************/
 
 #include "sbr.h"
+
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 #include "assembly.h"
 
 /**************************************************************************************
@@ -506,6 +509,8 @@ static int FindFreq(unsigned char *freq, int nFreq, unsigned char val) {
 
     return 0;
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */
 
 /**************************************************************************************
     Function:    RemoveFreq

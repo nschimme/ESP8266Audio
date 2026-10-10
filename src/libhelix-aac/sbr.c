@@ -52,6 +52,8 @@
 
 #include "sbr.h"
 
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 /**************************************************************************************
     Function:    InitSBRState
 
@@ -78,7 +80,7 @@ static void InitSBRState(PSInfoSBR *psi) {
     }
 
     /* initialize non-zero state variables */
-    for (ch = 0; ch < AAC_MAX_NCHANS; ch++) {
+    for (ch = 0; ch < AAC_MAX_NCHANS_OUT; ch++) {
         psi->sbrChan[ch].reset = 1;
         psi->sbrChan[ch].laPrev = -1;
     }
@@ -316,6 +318,20 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
         sbrFreq->numQMFBands = 0;
     }
 
+#if AAC_MAX_NCHANS_OUT == 1
+    if (chBlock == 2) {
+        int *bufL = (int *)aacDecInfo->rawSampleBuf[0];
+        int *bufR = (int *)aacDecInfo->rawSampleBuf[1];
+        if (bufL && bufR && aacDecInfo->rawSampleBytes == 4) {
+            int i;
+            for (i = 0; i < 1024; i++) {
+                bufL[i] = (bufL[i] + bufR[i]) >> 1;
+            }
+        }
+        chBlock = 1;
+    }
+#endif
+
     for (ch = 0; ch < chBlock; ch++) {
         sbrGrid = &(psi->sbrGrid[chBase + ch]);
         sbrChan = &(psi->sbrChan[chBase + ch]);
@@ -391,42 +407,6 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
             /* step 3 - HF adjustment */
             AdjustHighFreq(psi, sbrHdr, sbrGrid, sbrFreq, sbrChan, ch);
 
-#if AAC_MAX_NCHANS_OUT == 1
-            static int XBufL[32 + HF_ADJ][64][2];
-            if (chBlock == 2) {
-                if (ch == 0) {
-                    /* Save Left channel QMF subbands */
-                    for (l = 0; l < 32 + HF_ADJ; l++) {
-                        for (k = 0; k < 64; k++) {
-                            XBufL[l][k][0] = psi->XBuf[l][k][0];
-                            XBufL[l][k][1] = psi->XBuf[l][k][1];
-                        }
-                    }
-                    /* Save delay for ch = 0 and skip synthesis */
-                    for (l = 0; l < HF_GEN; l++) {
-                        for (k = 0; k < 64; k++) {
-                            psi->XBufDelay[chBase + ch][l][k][0] = psi->XBuf[l + 32][k][0];
-                            psi->XBufDelay[chBase + ch][l][k][1] = psi->XBuf[l + 32][k][1];
-                        }
-                    }
-                    sbrChan->gbMask[0] = sbrChan->gbMask[1];
-                    sbrChan->gbMask[1] = 0;
-                    if (sbrHdr->count > 0) {
-                        sbrChan->reset = 0;
-                    }
-                    continue;
-                } else if (ch == 1) {
-                    /* Average Left (XBufL) and Right (psi->XBuf) QMF subbands */
-                    for (l = 0; l < 32 + HF_ADJ; l++) {
-                        for (k = 0; k < 64; k++) {
-                            psi->XBuf[l][k][0] = (XBufL[l][k][0] + psi->XBuf[l][k][0]) >> 1;
-                            psi->XBuf[l][k][1] = (XBufL[l][k][1] + psi->XBuf[l][k][1]) >> 1;
-                        }
-                    }
-                    outptr = outbuf;
-                }
-            }
-#endif
 
 #if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
             if (psi->psUsed && chBlock == 1) {
@@ -551,3 +531,5 @@ int FlushCodecSBR(AACDecInfo *aacDecInfo) {
 
     return 0;
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */

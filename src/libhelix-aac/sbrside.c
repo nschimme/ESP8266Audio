@@ -45,6 +45,8 @@
 
 #include "sbr.h"
 
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 /**************************************************************************************
     Function:    GetSampRateIdx
 
@@ -664,3 +666,5 @@ void UnpackSBRChannelPair(BitStreamInfo *bsi, PSInfoSBR *psi, int chBase) {
         }
     }
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */

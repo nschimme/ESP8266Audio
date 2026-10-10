@@ -44,6 +44,9 @@
  **************************************************************************************/
 
 #include "sbr.h"
+
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 #include "assembly.h"
 
 #define SQRT1_2	0x5a82799a
@@ -362,3 +365,5 @@ void FFT32C(int *x) {
     R8FirstPass32(x);	/* gain 1 int bit,  lose 2 GB (making assumptions about input) */
     R4Core32(x);		/* gain 2 int bits, lose 0 GB (making assumptions about input) */
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */

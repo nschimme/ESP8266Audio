@@ -44,6 +44,9 @@
  **************************************************************************************/
 
 #include "sbr.h"
+
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 #include "assembly.h"
 
 /* invBandTab[i] = 1.0 / (i + 1), Q31 */
@@ -860,3 +863,5 @@ void AdjustHighFreq(PSInfoSBR *psi, SBRHeader *sbrHdr, SBRGrid *sbrGrid, SBRFreq
         sbrChan->laPrev = -1;
     }
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */

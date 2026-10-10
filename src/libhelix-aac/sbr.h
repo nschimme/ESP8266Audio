@@ -102,7 +102,11 @@
 #define MAX_HUFF_BITS		20
 #define NUM_QMF_DELAY_BUFS	10
 #define DELAY_SAMPS_QMFA	(NUM_QMF_DELAY_BUFS * 32)
+#if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
+#define DELAY_SAMPS_QMFS	(NUM_QMF_DELAY_BUFS * 32)
+#else
 #define DELAY_SAMPS_QMFS	(NUM_QMF_DELAY_BUFS * 128)
+#endif
 
 /* additional external symbols to name-mangle for static linking */
 #define FFT32C							STATNAME(FFT32C)

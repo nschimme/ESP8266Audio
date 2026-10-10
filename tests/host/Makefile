@@ -39,7 +39,7 @@ CPPOPTS=-g -Wunused-parameter -Wall -std=c++11  -Wstack-usage=300 -include Ardui
 
 all: mp3 aac aac_mono wav midi opus flac mod id3
 
-# Native build (no ). Parses only the ID3 filter against synthetic files.
+# Native build. Parses only the ID3 filter against synthetic files.
 id3: FORCE
 	python3 id3fix/gen_id3_fixtures.py
 	g++ -g -Wall -std=c++11 -include Arduino.h -o id3 id3.cpp Serial.cpp \

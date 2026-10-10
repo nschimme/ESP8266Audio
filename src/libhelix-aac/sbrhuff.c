@@ -45,6 +45,9 @@
  **************************************************************************************/
 
 #include "sbr.h"
+
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 #include "assembly.h"
 
 /**************************************************************************************
@@ -453,6 +456,8 @@ void UncoupleSBREnvelope(PSInfoSBR *psi, SBRGrid *sbrGrid, SBRFreq *sbrFreq, SBR
         }
     }
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */
 
 /**************************************************************************************
     Function:    UncoupleSBRNoise

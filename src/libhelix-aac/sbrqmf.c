@@ -44,6 +44,9 @@
  **************************************************************************************/
 
 #include "sbr.h"
+
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 #include "assembly.h"
 
 /*  PreMultiply64() table
@@ -648,3 +651,5 @@ void QMFSynthesis(int *inbuf, int *delay, int *delayIdx, int qmfsBands, short *o
     *delayIdx = (*delayIdx == NUM_QMF_DELAY_BUFS - 1 ? 0 : *delayIdx + 1);
 }
 #endif
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */
