@@ -37,7 +37,7 @@ CPPOPTS=-g -Wunused-parameter -Wall -std=c++11  -Wstack-usage=300 -include Ardui
 
 .phony: all
 
-all: mp3 aac aac_mono aac_stereo_downmix wav midi opus flac mod id3
+all: mp3 aac aac_mono wav midi opus flac mod id3
 
 # Native build (no ). Parses only the ID3 filter against synthetic files.
 id3: FORCE
