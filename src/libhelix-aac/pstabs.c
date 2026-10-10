@@ -37,6 +37,8 @@
 
 #include "ps.h"
 
+#if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
+
 /* Dequantization scale factor tables in PROGMEM (Q30 format, capped to 32-bit max) */
 
 /* IID (Inter-channel Intensity Difference) scale factors c1 in Q30 */
@@ -126,3 +128,5 @@ const int p2_13_20[7] PROGMEM = {
     0x02a7b800, /* 0.0414842100 */
     0x11626000  /* 0.2716302100 */
 };
+
+#endif /* defined(AAC_ENABLE_PS) && AAC_ENABLE_PS */

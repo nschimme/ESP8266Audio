@@ -36,6 +36,9 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "ps.h"
+
+#if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
+
 #include "sbr.h"
 #include "assembly.h"
 #include <string.h>
@@ -340,3 +343,5 @@ void ProcessPSSlot(PSData *psd, int Xbuf_slot[64][2], int slot_L[64][2], int slo
     memcpy(&slot_L[32], &Xbuf_slot[32], 32 * sizeof(int) * 2);
     memcpy(&slot_R[32], &Xbuf_slot[32], 32 * sizeof(int) * 2);
 }
+
+#endif /* defined(AAC_ENABLE_PS) && AAC_ENABLE_PS */
