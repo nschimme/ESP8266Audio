@@ -32,14 +32,14 @@ libflac=../../src/libflac/md5.c ../../src/libflac/window.c ../../src/libflac/mem
 ../../src/libflac/bitreader.c ../../src/libflac/bitmath.c ../../src/libflac/stream_decoder.c ../../src/libflac/float.c
 
 
-CCOPTS=-g -Wunused-parameter -Wall  -include Arduino.h -Wstack-usage=300
-CPPOPTS=-g -Wunused-parameter -Wall -std=c++11  -Wstack-usage=300 -include Arduino.h
+CCOPTS=-g -Wunused-parameter -Wall -m32 -include Arduino.h -Wstack-usage=300
+CPPOPTS=-g -Wunused-parameter -Wall -std=c++11 -m32 -Wstack-usage=300 -include Arduino.h
 
 .phony: all
 
 all: mp3 aac aac_downsample aac_mono wav midi opus flac mod id3
 
-# Native build. Parses only the ID3 filter against synthetic files.
+# Native build (no -m32). Parses only the ID3 filter against synthetic files.
 id3: FORCE
 	python3 id3fix/gen_id3_fixtures.py
 	g++ -g -Wall -std=c++11 -include Arduino.h -o id3 id3.cpp Serial.cpp \
