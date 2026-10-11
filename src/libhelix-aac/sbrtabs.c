@@ -46,6 +46,8 @@
 
 #include "sbr.h"
 
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 #if defined(PICO_RP2040) || defined(PICO_RP2350)
 #define DPROGMEM __attribute__(( section(".time_critical.data") ))
 #else
@@ -409,3 +411,5 @@ const int noiseTab[512 * 2] PROGMEM = {
     0x819673b6, 0x69545dac, 0x6feaa230, 0x726e6d3f, 0x886ebdfe, 0x34f5730a, 0x7af63ba2, 0x77307bbf,
     0x7cd80630, 0x6e45efe0, 0x7f8ad7eb, 0x59d7df99, 0x86c70946, 0xda233629, 0x753f6cbf, 0x825eeb40,
 };
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */

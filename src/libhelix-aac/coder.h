@@ -154,11 +154,14 @@
 #define twidTabEven                                     STATNAME(twidTabEven)
 #define twidTabOdd                                      STATNAME(twidTabOdd)
 
+#ifndef _HUFFINFO_DEFINED
+#define _HUFFINFO_DEFINED
 typedef struct _HuffInfo {
     int maxBits;                                                    /* number of bits in longest codeword */
     unsigned /*char*/ int count[MAX_HUFF_BITS];         /* count[i] = number of codes with length i+1 bits */
     int offset;                                                             /* offset into symbol table */
 } HuffInfo;
+#endif
 
 typedef struct _PulseInfo {
     unsigned char pulseDataPresent;
@@ -308,8 +311,8 @@ typedef struct _PSInfoBase {
     int                   sbrWorkBuf[MAX_NCHANS_ELEM][AAC_MAX_NSAMPS];
 #endif
     /* state information which must be saved for each element and used in next frame */
-    int                   overlap[AAC_MAX_NCHANS][AAC_MAX_NSAMPS];
-    int                   prevWinShape[AAC_MAX_NCHANS];
+    int                   overlap[AAC_MAX_NCHANS_OUT][AAC_MAX_NSAMPS];
+    int                   prevWinShape[AAC_MAX_NCHANS_OUT];
 
 } PSInfoBase;
 

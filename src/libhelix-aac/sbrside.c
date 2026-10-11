@@ -45,6 +45,8 @@
 
 #include "sbr.h"
 
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 /**************************************************************************************
     Function:    GetSampRateIdx
 
@@ -555,8 +557,27 @@ void UnpackSBRSingleChannel(BitStreamInfo *bsi, PSInfoSBR *psi, int chBase) {
 
         /* get ID, unpack extension info, do whatever is necessary with it... */
         while (bitsLeft > 0) {
-            GetBits(bsi, 8);
-            bitsLeft -= 8;
+            int ext_id = GetBits(bsi, 2);
+            bitsLeft -= 2;
+#if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS && (!defined(AAC_ENABLE_MONO_DOWNMIX) || !AAC_ENABLE_MONO_DOWNMIX)
+            if (ext_id == EXT_PS) {
+                psi->psUsed = 1;
+                DecodePSHeader(bsi, &psi->psData.hdr);
+                DecodePSDataPayload(bsi, &psi->psData);
+                bitsLeft = 0;
+            } else
+#endif
+            {
+                (void)ext_id;
+                while (bitsLeft >= 8) {
+                    GetBits(bsi, 8);
+                    bitsLeft -= 8;
+                }
+                if (bitsLeft > 0) {
+                    GetBits(bsi, bitsLeft);
+                    bitsLeft = 0;
+                }
+            }
         }
     }
 }
@@ -645,3 +666,5 @@ void UnpackSBRChannelPair(BitStreamInfo *bsi, PSInfoSBR *psi, int chBase) {
         }
     }
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */

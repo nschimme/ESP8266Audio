@@ -44,6 +44,9 @@
  **************************************************************************************/
 
 #include "sbr.h"
+
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 #include "assembly.h"
 
 #define FBITS_LPCOEFS	29	/* Q29 for range of (-4, 4) */
@@ -474,6 +477,8 @@ static void CalcLPCoefs(int *XBuf, int *a0re, int *a0im, int *a1re, int *a1im, i
         }
     }
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */
 
 /**************************************************************************************
     Function:    GenerateHighFreq

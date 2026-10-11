@@ -49,9 +49,32 @@
 #include <Arduino.h>
 #include <pgmspace.h>
 
-// Can't fit in ESP8266 RAM
-#ifndef ESP8266
-#define AAC_ENABLE_SBR 1
+#ifndef AAC_ENABLE_SBR
+#  define AAC_ENABLE_SBR 1
+#endif
+
+#ifndef AAC_MAX_NCHANS_OUT
+#  define AAC_MAX_NCHANS_OUT 2
+#endif
+
+#if AAC_MAX_NCHANS_OUT == 1
+#  undef AAC_ENABLE_PS
+#  define AAC_ENABLE_PS 0
+#else
+#  ifndef AAC_ENABLE_PS
+#    define AAC_ENABLE_PS 1
+#  endif
+#endif
+
+// On ESP8266: enable Downsampled SBR mode to save RAM
+#ifdef ESP8266
+#  ifndef AAC_ENABLE_SBR_DOWNSAMPLED
+#    define AAC_ENABLE_SBR_DOWNSAMPLED 1
+#  endif
+#else
+#  ifndef AAC_ENABLE_SBR_DOWNSAMPLED
+#    define AAC_ENABLE_SBR_DOWNSAMPLED 0
+#  endif
 #endif
 
 #pragma GCC optimize ("O3")

@@ -52,6 +52,8 @@
 
 #include "sbr.h"
 
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 /**************************************************************************************
     Function:    InitSBRState
 
@@ -78,7 +80,7 @@ static void InitSBRState(PSInfoSBR *psi) {
     }
 
     /* initialize non-zero state variables */
-    for (ch = 0; ch < AAC_MAX_NCHANS; ch++) {
+    for (ch = 0; ch < AAC_MAX_NCHANS_OUT; ch++) {
         psi->sbrChan[ch].reset = 1;
         psi->sbrChan[ch].laPrev = -1;
     }
@@ -107,7 +109,7 @@ int InitSBR(AACDecInfo *aacDecInfo) {
     /* allocate SBR state structure */
     psi = (PSInfoSBR *)malloc(sizeof(PSInfoSBR));
     if (!psi) {
-        printf("OOM in SBR, can't allocate %d bytes\n", sizeof(PSInfoSBR));
+        printf("OOM in SBR, can't allocate %d bytes\n", (int)sizeof(PSInfoSBR));
         return ERR_AAC_SBR_INIT;
     }
     InitSBRState(psi);
@@ -127,7 +129,7 @@ int InitSBRPre(AACDecInfo *aacDecInfo, void **ptr, int *sz) {
     psi = (PSInfoSBR *)*ptr;
     *sz -= sizeof(PSInfoSBR);
     if (*sz < 0) {
-        printf("OOM in SBR, can't allocate %d bytes\n", sizeof(PSInfoSBR));
+        printf("OOM in SBR, can't allocate %d bytes\n", (int)sizeof(PSInfoSBR));
         return ERR_AAC_SBR_INIT;
     }
     InitSBRState(psi);
@@ -247,6 +249,7 @@ int DecodeSBRBitstream(AACDecInfo *aacDecInfo, int chBase) {
         return ERR_AAC_SBR_BITSTREAM;
     }
 
+
     ByteAlignBitstream(&bsi);
 
     return ERR_AAC_NONE;
@@ -315,6 +318,20 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
         sbrFreq->numQMFBands = 0;
     }
 
+#if AAC_MAX_NCHANS_OUT == 1
+    if (chBlock == 2) {
+        int *bufL = (int *)aacDecInfo->rawSampleBuf[0];
+        int *bufR = (int *)aacDecInfo->rawSampleBuf[1];
+        if (bufL && bufR && aacDecInfo->rawSampleBytes == 4) {
+            int i;
+            for (i = 0; i < 1024; i++) {
+                bufL[i] = (bufL[i] + bufR[i]) >> 1;
+            }
+        }
+        chBlock = 1;
+    }
+#endif
+
     for (ch = 0; ch < chBlock; ch++) {
         sbrGrid = &(psi->sbrGrid[chBase + ch]);
         sbrChan = &(psi->sbrChan[chBase + ch]);
@@ -343,13 +360,25 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
             sbrChan->gbMask[gbIdx] |= gbMask;	/* gbIdx = (0 if i < 32), (1 if i >= 32) */
         }
 
+        int nChansOut = aacDecInfo->nChans;
+#if AAC_MAX_NCHANS_OUT == 1
+        if (nChansOut > 1) {
+            nChansOut = 1;
+        }
+#endif
+
         if (upsampleOnly) {
             /* no SBR - just run synthesis QMF to upsample by 2x */
             qmfsBands = 32;
             for (l = 0; l < 32; l++) {
                 /* step 4 - synthesis QMF */
-                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
-                outptr += 64 * aacDecInfo->nChans;
+#if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, nChansOut);
+                outptr += 32 * nChansOut;
+#else
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, nChansOut);
+                outptr += 64 * nChansOut;
+#endif
             }
         } else {
             /*  if previous frame had lower SBR starting freq than current, zero out the synthesized QMF
@@ -378,19 +407,73 @@ int DecodeSBRData(AACDecInfo *aacDecInfo, int chBase, short *outbuf) {
             /* step 3 - HF adjustment */
             AdjustHighFreq(psi, sbrHdr, sbrGrid, sbrFreq, sbrChan, ch);
 
+
+#if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
+            if (psi->psUsed && chBlock == 1) {
+                /* Apply Parametric Stereo slot-by-slot without huge RAM allocation */
+#if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
+                qmfsBands = 32;
+                short *outL = outbuf;
+                short *outR = outbuf + 1;
+                int slot_L[64][2];
+                int slot_R[64][2];
+
+                for (l = 0; l < 32; l++) {
+                    ProcessPSSlot(&psi->psData, psi->XBuf[l + HF_ADJ], slot_L, slot_R, l);
+
+                    /* Synthesize Left channel QMF for slot l */
+                    QMFSynthesis(slot_L[0], psi->delayQMFS[0], &(psi->delayIdxQMFS[0]), qmfsBands, outL, 2);
+                    outL += 32 * 2;
+
+                    /* Synthesize Right channel QMF for slot l */
+                    QMFSynthesis(slot_R[0], psi->delayQMFS[1], &(psi->delayIdxQMFS[1]), qmfsBands, outR, 2);
+                    outR += 32 * 2;
+                }
+                break;
+#else
+                qmfsBands = sbrFreq->kStart + sbrFreq->numQMFBands;
+                short *outL = outbuf;
+                short *outR = outbuf + 1;
+                int slot_L[64][2];
+                int slot_R[64][2];
+
+                for (l = 0; l < 32; l++) {
+                    ProcessPSSlot(&psi->psData, psi->XBuf[l + HF_ADJ], slot_L, slot_R, l);
+
+                    /* Synthesize Left channel QMF for slot l */
+                    QMFSynthesis(slot_L[0], psi->delayQMFS[0], &(psi->delayIdxQMFS[0]), qmfsBands, outL, 2);
+                    outL += 64 * 2;
+
+                    /* Synthesize Right channel QMF for slot l */
+                    QMFSynthesis(slot_R[0], psi->delayQMFS[1], &(psi->delayIdxQMFS[1]), qmfsBands, outR, 2);
+                    outR += 64 * 2;
+                }
+                break;
+#endif
+            }
+#endif
+
             /* step 4 - synthesis QMF */
+#if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
+            qmfsBands = 32;
+            for (l = 0; l < 32; l++) {
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, nChansOut);
+                outptr += 32 * nChansOut;
+            }
+#else
             qmfsBands = sbrFreq->kStartPrev + sbrFreq->numQMFBandsPrev;
             for (l = 0; l < sbrGrid->envTimeBorder[0]; l++) {
                 /* if new envelope starts mid-frame, use old settings until start of first envelope in this frame */
-                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
-                outptr += 64 * aacDecInfo->nChans;
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, nChansOut);
+                outptr += 64 * nChansOut;
             }
+#endif
 
             qmfsBands = sbrFreq->kStart + sbrFreq->numQMFBands;
             for (; l < 32; l++) {
                 /* use new settings for rest of frame (usually the entire frame, unless the first envelope starts mid-frame) */
-                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, aacDecInfo->nChans);
-                outptr += 64 * aacDecInfo->nChans;
+                QMFSynthesis(psi->XBuf[l + HF_ADJ][0], psi->delayQMFS[chBase + ch], &(psi->delayIdxQMFS[chBase + ch]), qmfsBands, outptr, nChansOut);
+                outptr += 64 * nChansOut;
             }
         }
 
@@ -448,3 +531,5 @@ int FlushCodecSBR(AACDecInfo *aacDecInfo) {
 
     return 0;
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */

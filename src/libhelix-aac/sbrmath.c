@@ -44,6 +44,9 @@
  **************************************************************************************/
 
 #include "sbr.h"
+
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 #include "assembly.h"
 
 #define Q28_2	0x20000000	/* Q28: 2.0 */
@@ -193,3 +196,5 @@ int SqrtFix(int q, int fBitsIn, int *fBitsOut) {
     *fBitsOut = ((fBitsIn + 2 * z) >> 1);
     return lo;
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */

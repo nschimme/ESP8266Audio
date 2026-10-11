@@ -48,6 +48,9 @@
 
 #include "aaccommon.h"
 #include "bitstream.h"
+#if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
+#include "ps.h"
+#endif
 
 #ifndef ASSERT
 #if defined(_WIN32) && defined(_M_IX86) && (defined (_DEBUG) || defined (REL_ENABLE_ASSERTS))
@@ -99,7 +102,11 @@
 #define MAX_HUFF_BITS		20
 #define NUM_QMF_DELAY_BUFS	10
 #define DELAY_SAMPS_QMFA	(NUM_QMF_DELAY_BUFS * 32)
+#if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
+#define DELAY_SAMPS_QMFS	(NUM_QMF_DELAY_BUFS * 32)
+#else
 #define DELAY_SAMPS_QMFS	(NUM_QMF_DELAY_BUFS * 128)
+#endif
 
 /* additional external symbols to name-mangle for static linking */
 #define FFT32C							STATNAME(FFT32C)
@@ -177,6 +184,8 @@ enum {
     HuffTabSBR_fNoise30b = 7
 };
 
+#ifndef _HUFFINFO_DEFINED
+#define _HUFFINFO_DEFINED
 typedef struct _HuffInfo {
     int maxBits;							/* number of bits in longest codeword */
 #ifdef ESP8266
@@ -186,6 +195,7 @@ typedef struct _HuffInfo {
 #endif
     int offset;								/* offset into symbol table */
 } HuffInfo;
+#endif
 
 /* need one SBRHeader per element (SCE/CPE), updated only on new header */
 typedef struct _SBRHeader {
@@ -281,10 +291,10 @@ typedef struct _PSInfoSBR {
     int                   sampRateIdx;
 
     /* state info that must be saved for each channel */
-    SBRHeader             sbrHdr[AAC_MAX_NCHANS];
-    SBRGrid               sbrGrid[AAC_MAX_NCHANS];
-    SBRFreq               sbrFreq[AAC_MAX_NCHANS];
-    SBRChan               sbrChan[AAC_MAX_NCHANS];
+    SBRHeader             sbrHdr[AAC_MAX_NCHANS_OUT];
+    SBRGrid               sbrGrid[AAC_MAX_NCHANS_OUT];
+    SBRFreq               sbrFreq[AAC_MAX_NCHANS_OUT];
+    SBRChan               sbrChan[AAC_MAX_NCHANS_OUT];
 
     /* temp variables, no need to save between blocks */
     unsigned char         dataExtra;
@@ -331,12 +341,17 @@ typedef struct _PSInfoSBR {
     int                   qFiltLast[MAX_QMF_BANDS];
 
     /* large buffers */
-    int                   delayIdxQMFA[AAC_MAX_NCHANS];
-    int                   delayQMFA[AAC_MAX_NCHANS][DELAY_SAMPS_QMFA];
-    int                   delayIdxQMFS[AAC_MAX_NCHANS];
-    int                   delayQMFS[AAC_MAX_NCHANS][DELAY_SAMPS_QMFS];
-    int                   XBufDelay[AAC_MAX_NCHANS][HF_GEN][64][2];
+    int                   delayIdxQMFA[AAC_MAX_NCHANS_OUT];
+    int                   delayQMFA[AAC_MAX_NCHANS_OUT][DELAY_SAMPS_QMFA];
+    int                   delayIdxQMFS[AAC_MAX_NCHANS_OUT];
+    int                   delayQMFS[AAC_MAX_NCHANS_OUT][DELAY_SAMPS_QMFS];
+    int                   XBufDelay[AAC_MAX_NCHANS_OUT][HF_GEN][64][2];
     int                   XBuf[32 + 8][64][2];
+
+#if defined(AAC_ENABLE_PS) && AAC_ENABLE_PS
+    int                   psUsed;
+    PSData                psData;
+#endif
 
 } PSInfoSBR;
 

@@ -44,6 +44,9 @@
  **************************************************************************************/
 
 #include "coder.h"
+
+#if defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR
+
 #include "assembly.h"
 
 /**************************************************************************************
@@ -441,3 +444,5 @@ void DecWindowOverlapShortNoClip(int *buf0, int *over0, int *out0, int winTypeCu
         i -= 4;
     } while (i);
 }
+
+#endif /* defined(AAC_ENABLE_SBR) && AAC_ENABLE_SBR */

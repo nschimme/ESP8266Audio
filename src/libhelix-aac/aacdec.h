@@ -91,8 +91,13 @@ extern "C" {
          0 bits =    0 bytes per CCE-D (uses bits from the SCE/CPE/CCE-I it is coupled to)
 */
 #ifndef AAC_MAX_NCHANS				/* if max channels isn't set in makefile, */
-#define AAC_MAX_NCHANS		2		/* set to default max number of channels  */
+#define AAC_MAX_NCHANS		8		/* set to max number of bitstream input channels  */
 #endif
+
+#ifndef AAC_MAX_NCHANS_OUT
+#define AAC_MAX_NCHANS_OUT	2		/* set to default max output channels */
+#endif
+
 #define AAC_MAX_NSAMPS		1024
 #define AAC_MAINBUF_SIZE	(768 * AAC_MAX_NCHANS)
 
@@ -102,10 +107,12 @@ extern "C" {
 #define AAC_PROFILE_SSR		2
 
 /* define these to enable decoder features */
-#if defined(HELIX_FEATURE_AUDIO_CODEC_AAC_SBR)
-#define AAC_ENABLE_SBR
-#endif //  HELIX_FEATURE_AUDIO_CODEC_AAC_SBR.
 #define AAC_ENABLE_MPEG4
+
+#if AAC_MAX_NCHANS_OUT == 1
+#  undef AAC_ENABLE_PS
+#  define AAC_ENABLE_PS 0
+#endif
 
 enum {
     ERR_AAC_NONE                          =   0,

@@ -528,6 +528,13 @@ int IMDCT(AACDecInfo *aacDecInfo, int ch, int chOut, short *outbuf) {
     }
     psi = (PSInfoBase *)(aacDecInfo->psInfoBase);
     icsInfo = (ch == 1 && psi->commonWin == 1) ? &(psi->icsInfo[0]) : &(psi->icsInfo[ch]);
+
+#if AAC_MAX_NCHANS_OUT < AAC_MAX_NCHANS
+    if (chOut >= AAC_MAX_NCHANS_OUT) {
+        chOut = AAC_MAX_NCHANS_OUT - 1;
+    }
+#endif
+
     outbuf += chOut;
 
     /* optimized type-IV DCT (operates inplace) */
@@ -556,9 +563,15 @@ int IMDCT(AACDecInfo *aacDecInfo, int ch, int chOut, short *outbuf) {
     }
 
     if (!aacDecInfo->sbrEnabled) {
+        int nChansOut = aacDecInfo->nChans;
+#if AAC_MAX_NCHANS_OUT == 1
+        if (nChansOut > 1) {
+            nChansOut = 1;
+        }
+#endif
         for (i = 0; i < AAC_MAX_NSAMPS; i++) {
             *outbuf = CLIPTOSHORT((psi->sbrWorkBuf[ch][i] + RND_VAL) >> FBITS_OUT_IMDCT);
-            outbuf += aacDecInfo->nChans;
+            outbuf += nChansOut;
         }
     }
 

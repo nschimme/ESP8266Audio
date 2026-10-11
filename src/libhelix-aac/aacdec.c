@@ -44,6 +44,8 @@
  **************************************************************************************/
 
 #include "aaccommon.h"
+#include "coder.h"
+#include "sbr.h"
 
 //#include "profile.h"
 
@@ -178,12 +180,30 @@ void AACGetLastFrameInfo(HAACDecoder hAACDecoder, AACFrameInfo *aacFrameInfo) {
         aacFrameInfo->tnsUsed =       0;
         aacFrameInfo->pnsUsed =       0;
     } else {
+        int nChans = aacDecInfo->nChans;
+#if AAC_MAX_NCHANS_OUT == 1
+        if (nChans > 1) {
+            nChans = 1;
+        }
+#else
+#if defined(AAC_ENABLE_SBR) && defined(AAC_ENABLE_PS)
+        if (aacDecInfo->psInfoSBR && ((PSInfoSBR *)aacDecInfo->psInfoSBR)->psUsed) {
+            nChans = 2;
+        }
+#endif
+#endif
         aacFrameInfo->bitRate =       aacDecInfo->bitRate;
-        aacFrameInfo->nChans =        aacDecInfo->nChans;
+        aacFrameInfo->nChans =        nChans;
         aacFrameInfo->sampRateCore =  aacDecInfo->sampRate;
+#if defined(AAC_ENABLE_SBR_DOWNSAMPLED) && AAC_ENABLE_SBR_DOWNSAMPLED
+        aacFrameInfo->sampRateOut =   aacDecInfo->sampRate;
+        aacFrameInfo->bitsPerSample = 16;
+        aacFrameInfo->outputSamps =   nChans * AAC_MAX_NSAMPS;
+#else
         aacFrameInfo->sampRateOut =   aacDecInfo->sampRate * (aacDecInfo->sbrEnabled ? 2 : 1);
         aacFrameInfo->bitsPerSample = 16;
-        aacFrameInfo->outputSamps =   aacDecInfo->nChans * AAC_MAX_NSAMPS * (aacDecInfo->sbrEnabled ? 2 : 1);
+        aacFrameInfo->outputSamps =   nChans * AAC_MAX_NSAMPS * (aacDecInfo->sbrEnabled ? 2 : 1);
+#endif
         aacFrameInfo->profile =       aacDecInfo->profile;
         aacFrameInfo->tnsUsed =       aacDecInfo->tnsUsed;
         aacFrameInfo->pnsUsed =       aacDecInfo->pnsUsed;
@@ -417,6 +437,31 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
         }
         PROFILE_END();
 
+#if AAC_MAX_NCHANS_OUT == 1
+        if (aacDecInfo->currBlockID == AAC_ID_CPE) {
+            /* Only perform pre-IMDCT spectral downmixing when SBR is disabled.
+             * When SBR is enabled, both core channels are decoded to provide inputs for SBR QMF analysis,
+             * and downmixing is performed in the QMF subband domain pre-synthesis.
+             */
+            if (!aacDecInfo->sbrEnabled) {
+                PSInfoBase *psi_base = (PSInfoBase *)(aacDecInfo->psInfoBase);
+                ICSInfo *icsInfoL = &(psi_base->icsInfo[0]);
+                ICSInfo *icsInfoR = &(psi_base->icsInfo[1]);
+
+                /* Downmix pre-IMDCT in spectral domain if window sequence and window shape match */
+                if (icsInfoL->winSequence == icsInfoR->winSequence && icsInfoL->winShape == icsInfoR->winShape) {
+                    int *coefL = psi_base->coef[0];
+                    int *coefR = psi_base->coef[1];
+                    int i;
+                    for (i = 0; i < 1024; i++) {
+                        coefL[i] = (coefL[i] + coefR[i]) >> 1;
+                    }
+                    elementChans = 1;
+                }
+            }
+        }
+#endif
+
 
         /* PNS, TNS, inverse transform */
         for (ch = 0; ch < elementChans; ch++) {
@@ -446,6 +491,17 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
             }
             PROFILE_END();
         }
+
+#if AAC_MAX_NCHANS_OUT == 1
+        if (aacDecInfo->currBlockID == AAC_ID_CPE && elementChans == 2) {
+            /* Fallback post-IMDCT time-domain downmix when window sequences/shapes differ */
+            int i;
+            int numSamps = aacDecInfo->sbrEnabled ? 2048 : 1024;
+            for (i = 0; i < numSamps; i++) {
+                outbuf[i] = (outbuf[i * 2 + 0] + outbuf[i * 2 + 1]) >> 1;
+            }
+        }
+#endif
 
 #ifdef AAC_ENABLE_SBR
         if (aacDecInfo->sbrEnabled && (aacDecInfo->currBlockID == AAC_ID_FIL || aacDecInfo->currBlockID == AAC_ID_LFE)) {

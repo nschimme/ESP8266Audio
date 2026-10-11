@@ -1,0 +1,13 @@
+*.o
+aac
+aac_downsample
+aac_mono
+flac
+id3
+midi
+mod
+mp3
+opus
+wav
+out*.wav
+*.wav
